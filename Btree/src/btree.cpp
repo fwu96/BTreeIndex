@@ -419,7 +419,7 @@ PageKeyPair<int>* BTreeIndex::insert(RIDKeyPair<int> pair, PageId currNum, int i
 		{
 			// std::cout << "pagePairTmp != NULL" << std::endl;
 			// if current node has space
-			if (nonleaf -> pageNoArray[INTARRAYNONLEAFSIZE] != 0)
+			if (nonleaf -> pageNoArray[INTARRAYNONLEAFSIZE] == 0)
 			{
 				// std::cout << "in if at LINE: " << __LINE__ << std::endl;
 				insert_nonleaf(*pagePairTmp, *pagePairTmp, nonleaf);
