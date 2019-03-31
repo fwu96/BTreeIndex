@@ -346,32 +346,74 @@ PageKeyPair<int>* BTreeIndex::insert(RIDKeyPair<int> pair, PageId currNum, int i
 	{
 		NonLeafNodeInt* nonleaf = (NonLeafNodeInt*) currPage;
 		PageKeyPair<int>* pagePairTmp = NULL;
+		int validEndPageIndex = -1;
 		// find the child node to insert
 		for (int i = 0; i < INTARRAYNONLEAFSIZE; i++) 
 		{
+			if(i < INTARRAYNONLEAFSIZE - 1)
+   			{
+				// compare the insert key value and the first kay value in the nonleaf node
+    			if(i == 0 && nonleaf -> keyArray[i] > pair.key)
+    			{
+     				pagePairTmp = insert(pair, nonleaf -> pageNoArray[i], nonleaf -> level);
+     				break;
+    			}
+				// the insert key >= precious key && < next key
+    			else if(nonleaf -> keyArray[i] <= pair.key && pair.key < nonleaf -> keyArray[i+1] )
+    			{
+     				pagePairTmp = insert(pair, nonleaf -> pageNoArray[i+1], nonleaf -> level);
+     				break;
+    			}
+				// at the last index of the keyarray && insert key > curr key
+    			else if(nonleaf -> keyArray[i+1] == 0 && nonleaf -> keyArray[i] <= pair.key)
+    			{
+     				pagePairTmp = insert(pair, nonleaf -> pageNoArray[i+1], nonleaf -> level);
+     				break;
+    			}
+   			}
+			// i == INTARRAYNONLEAFSIZE - 1
+   			else
+   			{
+				// insert key >= the last key
+    			if(nonleaf -> keyArray[i] <= pair.key)
+    			{
+     				pagePairTmp = insert(pair, nonleaf -> pageNoArray[i+1], nonleaf -> level);
+     				break;
+    			}
+   			}
 			// if(nonleaf -> pageNoArray[i] == 0){
 			// 	break;
 			// }
 
-			// find a key which is larger than the pair.key, insert into its left child
-			if (nonleaf -> pageNoArray[i+1] != 0 && nonleaf -> keyArray[i] > pair.key) 
-			{
-				// std::cout << "insert if" << std::endl;
-				pagePairTmp = insert(pair, nonleaf -> pageNoArray[i], nonleaf -> level);
-				// std::cout << "insert if after return" << std::endl;
+			// within the range of INTARRAYNONLEAFSIZE, if an invalid pageNo is reached, save the index before as ending index
+			// if(nonleaf -> pageNoArray[i] != 0){
+			// 	validEndPageNoIndex = i - 1;
+			// 	break;
+			// }
 
-				break;
-			}
+			// // find a key which is larger than the pair.key, insert into its left child
+			// if (nonleaf -> keyArray[i] > pair.key) 
+			// {
+			// 	// std::cout << "insert if" << std::endl;
+			// 	pagePairTmp = insert(pair, nonleaf -> pageNoArray[i], nonleaf -> level);
+			// 	// std::cout << "insert if after return" << std::endl;
+
+			// 	break;
+			// }
+
 			// if the key is larger than all valid key, insert into the right child of the right most valid key
-			if ( nonleaf -> pageNoArray[i+1] != 0 && nonleaf -> keyArray[i] <= pair.key) 
-			{
-				// std::cout << "insert else" << std::endl;
-				// std::cout << "nonleaf parray last ele " << nonleaf-> pageNoArray[i + 1] << std::endl;
-				pagePairTmp = insert(pair, nonleaf-> pageNoArray[i + 1], nonleaf -> level);
-				// std::cout << "insert else after return" << std::endl;
-				break;
-			}
+			// if ( nonleaf -> pageNoArray[i+1] != 0 && nonleaf -> keyArray[i] <= pair.key) 
+			// {
+			// 	// std::cout << "insert else" << std::endl;
+			// 	// std::cout << "nonleaf parray last ele " << nonleaf-> pageNoArray[i + 1] << std::endl;
+			// 	pagePairTmp = insert(pair, nonleaf-> pageNoArray[i + 1], nonleaf -> level);
+			// 	// std::cout << "insert else after return" << std::endl;
+			// 	break;
+			// }
 		}
+
+
+
 		// check if child insert moves up the middle key
 		if (pagePairTmp != NULL)
 		{
