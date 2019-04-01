@@ -44,6 +44,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	idxStr << relationName << '.' << attrByteOffset;
 	std::string indexName = idxStr.str();
 	std::cout << indexName << std::endl;
+	outIndexName = indexName;
 
 	try
 	{
@@ -135,7 +136,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		catch (EndOfFileException e)
 		{
 			std::cout << "put all records" << std::endl;
-			//bufMgr -> flushFile(file);
+			bufMgr -> flushFile(file);
 		}
 
 		// test, print out record in one leaf
@@ -168,11 +169,14 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		nodeOccupancy = 0;
 
 		Page* headerPage;
-
+		std::cout << "file exist, headernum = " << headerPageNum << std::endl;
 		bufMgr -> readPage(file, headerPageNum, headerPage);
 		IndexMetaInfo* metaPage = (IndexMetaInfo*)headerPage;
+		std::cout << "attrtype meta " << metaPage->attrType << std::endl;
+		std::cout << "atroffest meta " << metaPage->attrByteOffset << std::endl;
+		std::cout << "ralationName meta " << metaPage->relationName << std::endl;
 		rootPageNum = metaPage -> rootPageNo;
-		bufMgr -> unPinPage(file, headerPageNum, false);
+		bufMgr -> unPinPage(file, headerPageNum, true);
 		std::cout << "the rootPageNum now is " << rootPageNum << std::endl;
 
 		printOutAllTree();
@@ -288,7 +292,7 @@ void BTreeIndex::printThisLeft(PageId tmpNo){
 BTreeIndex::~BTreeIndex()
 {
 	std::cout << "in the destructor" << std::endl;
-	//bufMgr -> File(file);
+	bufMgr -> flushFile(file);
 	//file -> close();
 	std::cout << "flushed" << std::endl;
 	//file -> ~File();
@@ -620,6 +624,8 @@ PageKeyPair<int>* BTreeIndex::split_leaf(LeafNodeInt* leafNode, PageId currNum, 
 		insert_nonleaf(*left_pair, *right_pair, newRootNode);
 		// std::cout << "insert the key of the new splitted leaves to the new root" << std::endl;
 		bufMgr -> unPinPage(file, newRootNum, true);
+		bufMgr -> unPinPage(file, newSiblingNum, true);
+
 		changeRootNum(newRootNum);
 		std::cout << "the new root number is " << rootPageNum << std::endl;
 		// bufMgr -> unPinPage(file, newSiblingNum, true);
