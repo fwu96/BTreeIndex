@@ -664,13 +664,13 @@ PageKeyPair<int>* BTreeIndex::split_nonleaf(PageId curpagenum, NonLeafNodeInt* n
 	// std::cout << "done spliting curr non-leaf node in FUNC: " << __FUNCTION__ << std::endl;
 	siblingNode -> pageNoArray[INTARRAYNONLEAFSIZE / 2] = nonLeafNode -> pageNoArray[ INTARRAYNONLEAFSIZE];
 	nonLeafNode -> pageNoArray[INTARRAYNONLEAFSIZE] = 0;
-	PageKeyPair<int> * midpair = new PageKeyPair<int>;
+	//PageKeyPair<int> * midpair = new PageKeyPair<int>;
 	// std::cout << "key value at nonleafnode size/2: " << nonLeafNode -> keyArray[INTARRAYNONLEAFSIZE/2] << std::endl;
 	//midpair -> key = nonLeafNode -> keyArray[INTARRAYNONLEAFSIZE/2];
 	//nonLeafNode -> keyArray[INTARRAYNONLEAFSIZE/2] = 0;
 	//midpair -> pageNo = newSiblingNum;
-	midpair -> set(newSiblingNum, nonLeafNode -> keyArray[INTARRAYNONLEAFSIZE / 2]);
-
+	int midKey = nonLeafNode -> keyArray[INTARRAYNONLEAFSIZE / 2];
+	nonLeafNode -> keyArray[INTARRAYNONLEAFSIZE / 2] = 0;
 	// insert the key pair into the newly splitted nodes
 	// insert into the left non-leaf node
 	if(pair.key < siblingNode -> keyArray[0])
@@ -684,8 +684,8 @@ PageKeyPair<int>* BTreeIndex::split_nonleaf(PageId curpagenum, NonLeafNodeInt* n
 	}
 	PageKeyPair<int>* left_pair = new PageKeyPair<int>;
 	PageKeyPair<int>* right_pair = new PageKeyPair<int>;
-	left_pair -> set(curpagenum, siblingNode -> keyArray[0]);
-	right_pair -> set(newSiblingNum, siblingNode -> keyArray[0]);
+	left_pair -> set(curpagenum, midKey);
+	right_pair -> set(newSiblingNum, midKey);
 	// if the splitted non-leaf node is root, generate a new root
 	if( curpagenum == rootPageNum)
 	{
