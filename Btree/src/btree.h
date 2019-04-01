@@ -305,7 +305,8 @@ class BTreeIndex {
   void printOutAllTree();
 
   void printThisLeft(PageId tmpNo);
-
+  const bool checkValid(int key);
+  const void search_key_in_leaf(LeafNodeInt* LeafNode , int curnum);
   const void changeRootNum(PageId newRootNum);
  public:
 

@@ -45,7 +45,8 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	std::string indexName = idxStr.str();
 	std::cout << indexName << std::endl;
 	outIndexName = indexName;
-
+	attributeType = attrType;
+	scanExecuting = false;
 	try
 	{
 		// create an index file
@@ -268,7 +269,8 @@ void BTreeIndex::printOutAllTree()
 	}
 }
 
-void BTreeIndex::printThisLeft(PageId tmpNo){
+void BTreeIndex::printThisLeft(PageId tmpNo)
+{
 	std::cout << "ready to print" << std::endl;
 	Page* tmpPage;
 	bufMgr -> readPage(file, tmpNo, tmpPage);
@@ -511,7 +513,8 @@ const void BTreeIndex::insert_nonleaf(PageKeyPair<int> pair1, PageKeyPair<int> p
 		}
 		else
 		{
-			if(nonLeafNode -> keyArray[i] > pair2.key){
+			if(nonLeafNode -> keyArray[i] > pair2.key)
+			{
 				// save current information, insert pair information into current locatiion
 				pairTmp.key = nonLeafNode->keyArray[i];
 				pairTmp.pageNo = nonLeafNode->pageNoArray[i];
@@ -741,8 +744,75 @@ const void BTreeIndex::startScan(const void* lowValParm,
 				   const void* highValParm,
 				   const Operator highOpParm)
 {
+// if another scan is on going, end that scan
+        if(scanExecuting == true)
+        {
+                endScan();
+        }
+        // initialize for this scan
+        scanExecuting = true;
+        //nextEntry = ?;
+
+        // update the low and high parameters depending on type
+        // integer Type
+        //if(attributeType == 0)
+        //{
+        //    lowValInt = *((int*)lowValParm);
+        //    highValInt = *((int*)highValParm);
+        //}
+        // double Type
+        //else if(attributeType == 1)
+        //{
+        //        lowValDouble = lowValDouble;
+        //        highValDouble = highValDouble;
+        //}
+        // string Type
+        //else if(attributeType == 2)
+        //{
+        //        lowValString = lowValString;
+        //        highValString = highValString;
+        //}
+
+        // update the operator
+        lowOp = lowOpParm;
+        highOp = highOpParm;
+
+        // recursively find the exact place to start
+        // start from the root
+  		Page* tmp;
+        bufMgr -> readPage(file, rootPageNum, tmp);
+
+        // if root is leaf, recursing through all record of root is enough
+        if(rootPageNum == 2)
+        {
+			LeafNodeInt* rootLeaf = (LeafNodeInt*)tmp;
+			// for (int i = 0; i < INTARRAYLEAFSIZE; i++)
+			// {
+			// 	search_key_in_one_leaf();
+			// 	// if(findTheMatch(rootLeaf -> ridArray[i])){
+			// 	// 	break;
+
+			// 	// }
+			// }
+			search_key_in_leaf(rootLeaf , rootPageNum);
+        }
+		// if root is not leaf, recursing through all children of root
+        else
+        {
+			ß
+        }
+        //currentPageNum = ?;
+        //currentPageData = ?; 
 
 }
+
+// bool BTreeIndex::findTheMatch(){
+
+
+// 	return false;
+// }
+
+
 
 // -----------------------------------------------------------------------------
 // BTreeIndex::scanNext
@@ -751,6 +821,44 @@ const void BTreeIndex::startScan(const void* lowValParm,
 const void BTreeIndex::scanNext(RecordId& outRid) 
 {
 
+ 	if(scanExecuting == false)
+ 	{
+  		throw new ScanNotInitializedException();
+ 	}
+ 	Page* page;
+ 	bufMgr ->readPage( file, currentPageNum, page);
+ 	LeafNodeInt* leafnode = (LeafNodeInt*) page;
+ 	outRid = leafnode -> ridArray[nextEntry];
+	bufMgr -> readPage(file, outRid.page_number, page);
+	RECORD myRect = *(reinterpret_cast<const RECORD*>(page -> getRecord(outRid).data()));
+ 	if (!checkValid(myRect.i))
+	{
+		throw new IndexScanCompletedException();
+	}
+	if( nextEntry == INTARRAYLEAFSIZE -1)
+ 	{
+  		if(leafnode -> rightSibPageNo == 0)
+  		{
+   			throw new IndexScanCompletedException();
+  		}
+  		else
+  		{
+   			currentPageNum = leafnode -> rightSibPageNo;
+   			nextEntry = 0;
+  		}
+	}
+	else if(nextEntry < INTARRAYLEAFSIZE -1 && leafnode -> keyArray[nextEntry + 1] == 0)
+ 	{
+  		if(leafnode -> rightSibPageNo == 0)
+  		{
+   			throw new IndexScanCompletedException();
+  		}
+  		else
+  		{
+   			currentPageNum = leafnode -> rightSibPageNo;
+   			nextEntry = 0;
+  		}
+ 	}
 }
 
 // -----------------------------------------------------------------------------
@@ -760,6 +868,49 @@ const void BTreeIndex::scanNext(RecordId& outRid)
 const void BTreeIndex::endScan() 
 {
 
+}
+
+
+const bool BTreeIndex::checkValid(int key)
+{
+	if(lowOp == GT && highOp == LT)
+	{
+		return key > lowValInt && key < highValInt;
+	}
+	if(lowOp == GTE && highOp == LT)
+	{
+		return key >= lowValInt && key < highValInt;
+	}
+	if(lowOp == GT && highOp == LTE)
+	{
+		return key > lowValInt && key <= highValInt;
+	}
+	if(lowOp == GTE && highOp == LTE)
+	{
+		return key >= lowValInt && key <= highValInt;
+	}
+}
+
+const void BTreeIndex::search_key_in_leaf(LeafNodeInt* LeafNode, int PageNum)
+{
+	int flag = 0;
+	for(int i = 0;i < INTARRAYLEAFSIZE; i++)
+	{
+		if(checkValid(lowValInt))
+		{
+			if(flag == 0)
+			{
+				flag = 1;
+				nextEntry = i;
+				currentPageNum = PageNum;
+				return ;
+			}
+		}
+	}
+	if( flag == 0)
+	{
+		throw new IndexScanCompletedException();
+	}
 }
 
 }
