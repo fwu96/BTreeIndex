@@ -749,30 +749,10 @@ const void BTreeIndex::startScan(const void* lowValParm,
         {
                 endScan();
         }
+
         // initialize for this scan
         scanExecuting = true;
         //nextEntry = ?;
-
-        // update the low and high parameters depending on type
-        // integer Type
-        //if(attributeType == 0)
-        //{
-        //    lowValInt = *((int*)lowValParm);
-        //    highValInt = *((int*)highValParm);
-        //}
-        // double Type
-        //else if(attributeType == 1)
-        //{
-        //        lowValDouble = lowValDouble;
-        //        highValDouble = highValDouble;
-        //}
-        // string Type
-        //else if(attributeType == 2)
-        //{
-        //        lowValString = lowValString;
-        //        highValString = highValString;
-        //}
-
         // update the operator
         lowOp = lowOpParm;
         highOp = highOpParm;
@@ -786,23 +766,18 @@ const void BTreeIndex::startScan(const void* lowValParm,
         if(rootPageNum == 2)
         {
 			LeafNodeInt* rootLeaf = (LeafNodeInt*)tmp;
-			// for (int i = 0; i < INTARRAYLEAFSIZE; i++)
-			// {
-			// 	search_key_in_one_leaf();
-			// 	// if(findTheMatch(rootLeaf -> ridArray[i])){
-			// 	// 	break;
-
-			// 	// }
-			// }
 			search_key_in_leaf(rootLeaf , rootPageNum);
         }
 		// if root is not leaf, recursing through all children of root
         else
         {
-
+            NonLeafNodeInt* root = (NonLeafNodeInt*) tmp;
+            find_leafnode(root, root -> level);
         }
-        //currentPageNum = ?;
-        //currentPageData = ?; 
+        std::cout << "nextEntry = " << nextEntry << "currentPageNum = " << currentPageNum << std::endl;
+        bufMgr -> readPage(file, currentPageNum, tmp);
+        currentPageData = tmp;
+
 
 }
 
@@ -956,7 +931,17 @@ const void BTreeIndex::scanNext(RecordId& outRid)
 //
 const void BTreeIndex::endScan() 
 {
-
+    if (!scanExecuting)
+    {
+        throw ScanNotInitializedException();
+    }
+    scanExecuting = false;
+    // unpin
+    bufMgr -> unPinPage(file, currentPageNum, false);
+    // reset
+    currentPageData = nullptr;
+    currentPageNum = -1;
+    nextEntry = -1;
 }
 
 
@@ -985,7 +970,7 @@ const void BTreeIndex::search_key_in_leaf(LeafNodeInt* LeafNode, int PageNum)
     int flag = 0;
     for(int i = 0;i < INTARRAYLEAFSIZE; i++)
     {
-        if(checkValid(lowValInt))
+        if(checkValid( LeafNode ->keyArray[i]))
         {
             if(flag == 0)
             {
