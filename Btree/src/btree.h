@@ -302,6 +302,8 @@ class BTreeIndex {
 
   PageKeyPair<int>* split_nonleaf(PageId curpagenum, NonLeafNodeInt* nonLeafNode, PageKeyPair<int> pair);
 
+    const void find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeisleaf);
+
   void printOutAllTree();
 
   void printThisLeft(PageId tmpNo);
