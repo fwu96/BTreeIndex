@@ -753,6 +753,8 @@ const void BTreeIndex::startScan(const void* lowValParm,
         // initialize for this scan
         scanExecuting = true;
         //nextEntry = ?;
+        lowValInt = *((int*)lowValParm);
+        highValInt = *((int*)highValParm);
         // update the operator
         lowOp = lowOpParm;
         highOp = highOpParm;
@@ -884,45 +886,49 @@ const void BTreeIndex::find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeis
 
 const void BTreeIndex::scanNext(RecordId& outRid) 
 {
-
  	if(scanExecuting == false)
  	{
-  		throw new ScanNotInitializedException();
+  		throw ScanNotInitializedException();
  	}
- 	Page* page;
- 	bufMgr ->readPage( file, currentPageNum, page);
- 	LeafNodeInt* leafnode = (LeafNodeInt*) page;
- 	outRid = leafnode -> ridArray[nextEntry];
-	bufMgr -> readPage(file, outRid.page_number, page);
-	RECORD myRect = *(reinterpret_cast<const RECORD*>(page -> getRecord(outRid).data()));
- 	if (!checkValid(myRect.i))
-	{
-		throw new IndexScanCompletedException();
-	}
-	if( nextEntry == INTARRAYLEAFSIZE -1)
- 	{
-  		if(leafnode -> rightSibPageNo == 0)
-  		{
-   			throw new IndexScanCompletedException();
-  		}
-  		else
-  		{
-   			currentPageNum = leafnode -> rightSibPageNo;
-   			nextEntry = 0;
-  		}
-	}
-	else if(nextEntry < INTARRAYLEAFSIZE -1 && leafnode -> keyArray[nextEntry + 1] == 0)
- 	{
-  		if(leafnode -> rightSibPageNo == 0)
-  		{
-   			throw new IndexScanCompletedException();
-  		}
-  		else
-  		{
-   			currentPageNum = leafnode -> rightSibPageNo;
-   			nextEntry = 0;
-  		}
- 	}
+
+ 	//nextEntry  currentPageNum currentPageData
+    LeafNodeInt* leafnode = (LeafNodeInt*) currentPageData;
+ 	int key = leafnode->keyArray[nextEntry];
+ 	if(!checkValid(key))
+    {
+ 	    throw IndexScanCompletedException();
+    }
+
+ 	if(leafnode->rightSibPageNo == 0)
+    {
+        throw IndexScanCompletedException();
+    }
+ 	else if(nextEntry < INTARRAYLEAFSIZE - 1)
+    {
+ 	    if(leafnode->keyArray[nextEntry + 1] == 0)
+        {
+ 	        nextEntry = 0;
+            currentPageNum = leafnode->rightSibPageNo;
+            bufMgr -> readPage(file, currentPageNum, currentPageData);
+            LeafNodeInt* p = (LeafNodeInt *) currentPageData;
+            outRid = p->ridArray[0];
+        }
+ 	    else
+        {
+            LeafNodeInt* p = (LeafNodeInt *) currentPageData;
+ 	        outRid = p ->ridArray[nextEntry];
+ 	        nextEntry = nextEntry + 1;
+        }
+    }
+ 	else
+    {
+        nextEntry = 0;
+        currentPageNum = leafnode->rightSibPageNo;
+        bufMgr -> readPage(file, currentPageNum, currentPageData);
+        LeafNodeInt* p = (LeafNodeInt *) currentPageData;
+        outRid = p->ridArray[0];
+    }
+
 }
 
 // -----------------------------------------------------------------------------
@@ -967,25 +973,18 @@ const bool BTreeIndex::checkValid(int key)
 
 const void BTreeIndex::search_key_in_leaf(LeafNodeInt* LeafNode, int PageNum)
 {
-    int flag = 0;
+    std::cout<< " the first key is" <<  LeafNode ->keyArray[0] << std::endl;
     for(int i = 0;i < INTARRAYLEAFSIZE; i++)
     {
+        std::cout<< "i :" << i <<" is " <<  LeafNode ->keyArray[i] << std::endl;
         if(checkValid( LeafNode ->keyArray[i]))
         {
-            if(flag == 0)
-            {
-                flag = 1;
-                nextEntry = i;
-                currentPageNum = PageNum;
-                return ;
-            }
+            nextEntry = i;
+            currentPageNum = PageNum;
+            return ;
         }
     }
-    if( flag == 0)
-    {
-        throw new IndexScanCompletedException();
-    }
-
+    throw NoSuchKeyFoundException();
 }
 
 }
