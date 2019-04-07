@@ -214,25 +214,27 @@ void BTreeIndex::printOutAllTree()
 			if(tmpNoneLeaf -> level == 1)
 			{
 				std::cout << "I am in lalalalalalalllllllllllllllllllllllllllllllllllllllllllllll" << std::endl;
-				for(int i = 0; i < INTARRAYNONLEAFSIZE + 1; i++)
+				int i = 0;
+				for(i = 0; i < INTARRAYNONLEAFSIZE + 1; i++)
 				{
 					if(tmpNoneLeaf -> pageNoArray[i] == 0)
 					{
 						break;
-					}	
-					printThisLeft(tmpNoneLeaf -> pageNoArray[i]);
-					nextPage = tmpNoneLeaf -> pageNoArray[i];
+					}
+				        printThisLeft(tmpNoneLeaf -> pageNoArray[i]);
 				}
+				nextPage = tmpNoneLeaf -> pageNoArray[i - 1];
+				std::cout << "nextpage to start is " << nextPage << std::endl;
 				bufMgr -> unPinPage(file, tmpNum, false);
 				Page* lalala;
 				bufMgr -> readPage(file, nextPage, lalala);
 				LeafNodeInt* lalaLeaf = (LeafNodeInt*)lalala;
-				std::cout << "before the while" << lalaLeaf -> rightSibPageNo << std::endl;
+				std::cout << "before the while " << lalaLeaf -> rightSibPageNo << " at page num " << nextPage << std::endl;
 				bufMgr -> unPinPage(file, nextPage, false);
 				PageId rightNum = lalaLeaf -> rightSibPageNo;
+                                
 				while(rightNum > 0)
 				{
-					std::cout << "lalaLeaf > 0" << std::endl;
 					std::cout << "rightNum " << rightNum << std::endl;
 					printThisLeft(rightNum);
 					bufMgr -> readPage(file, rightNum, lalala);
@@ -240,6 +242,7 @@ void BTreeIndex::printOutAllTree()
 					std::cout << lalaLeaf -> rightSibPageNo << std::endl;
 					bufMgr -> unPinPage(file, rightNum, false);
 					rightNum = lalaLeaf -> rightSibPageNo;
+					std::cout << "rightNum " << rightNum << std::endl;
 					//bufMgr -> unPinPage(file, rightNum, false);
 				}
 
@@ -271,10 +274,10 @@ void BTreeIndex::printOutAllTree()
 
 void BTreeIndex::printThisLeft(PageId tmpNo)
 {
-	std::cout << "ready to print" << std::endl;
 	Page* tmpPage;
 	bufMgr -> readPage(file, tmpNo, tmpPage);
 	LeafNodeInt* leafNode = (LeafNodeInt*)tmpPage;
+	std::cout << "ready to print " << tmpNo << " with rightSibling " << leafNode -> rightSibPageNo << std::endl;
 	for(int i = 0; i < INTARRAYLEAFSIZE; i++)
 	{
 		if(leafNode -> ridArray[i].slot_number != 0)
@@ -352,7 +355,7 @@ PageKeyPair<int>* BTreeIndex::insert(RIDKeyPair<int> pair, PageId currNum, int i
 	{
 		NonLeafNodeInt* nonleaf = (NonLeafNodeInt*) currPage;
 		PageKeyPair<int>* pagePairTmp = NULL;
-		int validEndPageIndex = -1;
+		// int validEndPageIndex = -1;
 		// find the child node to insert
 		for (int i = 0; i < INTARRAYNONLEAFSIZE; i++) 
 		{
@@ -433,7 +436,7 @@ PageKeyPair<int>* BTreeIndex::insert(RIDKeyPair<int> pair, PageId currNum, int i
 		else 
 		{
 			// split
-			// std::cout << "leaf noed ready to be splited" << std::endl;
+			std::cout << "leaf node ready to be splited with currNum " << currNum << std::endl;
 			PageKeyPair<int>* moveUpMidPair = split_leaf(leafNode, currNum, pair);
 	
 			// std::cout << "leaf already splited" << std::endl;
@@ -550,7 +553,12 @@ PageKeyPair<int>* BTreeIndex::split_leaf(LeafNodeInt* leafNode, PageId currNum, 
 	std::cout << "alloc newSiblingNum " << newSiblingNum << " in split_leaf func" << std::endl;
 	LeafNodeInt* siblingNode = (LeafNodeInt*) newSibling;
 	// add rightSibPageNo to the current leaf node
+	if(leafNode -> rightSibPageNo != 0)
+	{
+		siblingNode -> rightSibPageNo = leafNode -> rightSibPageNo;
+	}
 	leafNode -> rightSibPageNo = newSiblingNum;
+	std::cout << "current page Num " << currNum << " with rightSibPageNo " << leafNode -> rightSibPageNo << std::endl;
 	int cnt = 0;
 	// std::cout << "decleared vars in " << __FUNCTION__ << std::endl;
 	// split the current leaf into two leaves
@@ -705,6 +713,7 @@ const void BTreeIndex::changeRootNum(PageId newRootNum)
 	// std::cout << "read header page" << std::endl;
 	IndexMetaInfo* headerNode = (IndexMetaInfo*)headerPage;
 	headerNode -> rootPageNo = newRootNum;
+	std::cout << "---------------------------------------------------the new root number is " << newRootNum << std::endl;
 	bufMgr -> unPinPage(file, headerPageNum, true);
 }
 
@@ -743,22 +752,36 @@ const void BTreeIndex::startScan(const void* lowValParm,
         if(rootPageNum == 2)
         {
 			LeafNodeInt* rootLeaf = (LeafNodeInt*)tmp;
-			search_key_in_leaf(rootLeaf , rootPageNum);
+			bool findKey = search_key_in_leaf(rootLeaf , rootPageNum);
+			bufMgr -> unPinPage(file, rootPageNum, false);
+			if(findKey)
+			{
+				endScan();
+				 throw NoSuchKeyFoundException();
+
+			}
         }
 		// if root is not leaf, recursing through all children of root
         else
         {
+	    bool findKey = false;
             NonLeafNodeInt* root = (NonLeafNodeInt*) tmp;
-            find_leafnode(root, root -> level);
+            find_leafnode(root, root -> level, findKey);
+	    bufMgr -> unPinPage(file, rootPageNum, false);
+	    if(findKey){
+		std::cout << "it is time to end the scanning===================================================end the scanning===================" << std::endl;
+		    endScan();
+		throw NoSuchKeyFoundException();
+	    }
         }
-        std::cout << "nextEntry = " << nextEntry << "currentPageNum = " << currentPageNum << std::endl;
+        std::cout << "********************************************************nextEntry = " << nextEntry << "currentPageNum = " << currentPageNum << std::endl;
         bufMgr -> readPage(file, currentPageNum, tmp);
         currentPageData = tmp;
 
 
 }
 
-const void BTreeIndex::find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeisleaf)
+const void BTreeIndex::find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeisleaf, bool findKey)
 {
     // the next node is a nonleafnode
     if(nextnodeisleaf == 0)
@@ -770,17 +793,19 @@ const void BTreeIndex::find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeis
                 if( i == 0 && nonleafnode->keyArray[i] > lowValInt)
                 {
                     Page* page;
-                    bufMgr->readPage(file,nonleafnode -> pageNoArray[i],page);
+                    bufMgr -> readPage(file,nonleafnode -> pageNoArray[i],page);
                     NonLeafNodeInt* p = (NonLeafNodeInt*) page;
-                    find_leafnode(p, p->level);
+                    find_leafnode(p, p->level, findKey);
+		    bufMgr -> unPinPage(file, nonleafnode -> pageNoArray[i], false);
                     break;
                 }
                 else if(nonleafnode->keyArray[i] <= lowValInt && lowValInt < nonleafnode->keyArray[i + 1])
                 {
                     Page* page;
-                    bufMgr->readPage(file,nonleafnode -> pageNoArray[i + 1],page);
+                    bufMgr -> readPage(file,nonleafnode -> pageNoArray[i + 1],page);
                     NonLeafNodeInt* p = (NonLeafNodeInt*) page;
-                    find_leafnode(p ,p->level);
+                    find_leafnode(p ,p->level, findKey);
+		    bufMgr -> unPinPage(file, nonleafnode -> pageNoArray[i + 1], false);
                     break;
                 }
                 else if(nonleafnode -> keyArray[i+1] == 0 && nonleafnode -> keyArray[i] <= lowValInt)
@@ -788,7 +813,8 @@ const void BTreeIndex::find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeis
                     Page* page;
                     bufMgr->readPage(file,nonleafnode -> pageNoArray[i + 1],page);
                     NonLeafNodeInt* p = (NonLeafNodeInt*) page;
-                    find_leafnode( p ,p->level);
+                    find_leafnode( p ,p->level, findKey);
+		    bufMgr -> unPinPage(file, nonleafnode -> pageNoArray[i + 1], false);
                     break;
                 }
             }
@@ -801,7 +827,8 @@ const void BTreeIndex::find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeis
                     Page* page;
                     bufMgr->readPage(file,nonleafnode -> pageNoArray[i + 1],page);
                     NonLeafNodeInt* p = (NonLeafNodeInt*) page;
-                    find_leafnode( p ,p->level);
+                    find_leafnode( p ,p->level, findKey);
+		    bufMgr -> unPinPage(file, nonleafnode -> pageNoArray[i + 1], false);
                     break;
                 }
             }
@@ -820,7 +847,8 @@ const void BTreeIndex::find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeis
                     Page* page;
                     bufMgr->readPage(file,nonleafnode -> pageNoArray[i],page);
                     LeafNodeInt* p = (LeafNodeInt*) page;
-                    search_key_in_leaf(p, nonleafnode -> pageNoArray[i]);
+                    findKey = search_key_in_leaf(p, nonleafnode -> pageNoArray[i]);
+		    bufMgr -> unPinPage(file, nonleafnode -> pageNoArray[i], false);
                     break;
                 }
                 else if(nonleafnode->keyArray[i] <= lowValInt && lowValInt < nonleafnode->keyArray[i + 1])
@@ -828,7 +856,8 @@ const void BTreeIndex::find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeis
                     Page* page;
                     bufMgr->readPage(file,nonleafnode -> pageNoArray[i+1],page);
                     LeafNodeInt* p = (LeafNodeInt*) page;
-                    search_key_in_leaf(p, nonleafnode -> pageNoArray[i+1]);
+                    findKey = search_key_in_leaf(p, nonleafnode -> pageNoArray[i+1]);
+		    bufMgr -> unPinPage(file, nonleafnode -> pageNoArray[i + 1], false);
                     break;
                 }
                 else if(nonleafnode -> keyArray[i+1] == 0 && nonleafnode -> keyArray[i] <= lowValInt)
@@ -836,7 +865,8 @@ const void BTreeIndex::find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeis
                     Page* page;
                     bufMgr->readPage(file,nonleafnode -> pageNoArray[i + 1],page);
                     LeafNodeInt* p = (LeafNodeInt*) page;
-                    search_key_in_leaf(p, nonleafnode -> pageNoArray[i+1]);
+                    findKey = search_key_in_leaf(p, nonleafnode -> pageNoArray[i+1]);
+		    bufMgr -> unPinPage(file, nonleafnode -> pageNoArray[i + 1], false);
                     break;
                 }
             }
@@ -847,7 +877,8 @@ const void BTreeIndex::find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeis
                     Page* page;
                     bufMgr->readPage(file,nonleafnode -> pageNoArray[i+1],page);
                     LeafNodeInt* p = (LeafNodeInt*) page;
-                    search_key_in_leaf(p, nonleafnode -> pageNoArray[i+1]);
+                    findKey = search_key_in_leaf(p, nonleafnode -> pageNoArray[i+1]);
+		    bufMgr -> unPinPage(file, nonleafnode -> pageNoArray[i + 1], false);
                     break;
                 }
             }
@@ -863,33 +894,43 @@ const void BTreeIndex::scanNext(RecordId& outRid)
 {
  	if(scanExecuting == false)
  	{
+		bufMgr -> unPinPage(file, currentPageNum, false);
   		throw ScanNotInitializedException();
  	}
 
  	//nextEntry  currentPageNum currentPageData
-    LeafNodeInt* leafnode = (LeafNodeInt*) currentPageData;
+    	LeafNodeInt* leafnode = (LeafNodeInt*) currentPageData;
  	int key = leafnode->keyArray[nextEntry];
+	std::cout << "next scan returns key value " << key << std::endl;
  	if(!checkValid(key))
-    {
+    	{	
+	    std::cout << "I am out of range because I am " << key << std::endl;
+	    bufMgr -> unPinPage(file, currentPageNum, false);
  	    throw IndexScanCompletedException();
-    }
+    	}
 
+	std::cout << "nextEntry is before increment " << nextEntry << std::endl;
  	if(leafnode->rightSibPageNo == 0)
-    {
-        throw IndexScanCompletedException();
-    }
+    	{
+		std::cout << "Why I am here???" << std::endl;
+		bufMgr -> unPinPage(file, currentPageNum, false);
+        	throw IndexScanCompletedException();
+    	}	
  	else if(nextEntry < INTARRAYLEAFSIZE - 1)
     {
  	    if(leafnode->keyArray[nextEntry + 1] == 0)
         {
  	        nextEntry = 0;
+	    bufMgr -> unPinPage(file, currentPageNum, false);
             currentPageNum = leafnode->rightSibPageNo;
             bufMgr -> readPage(file, currentPageNum, currentPageData);
+	    std::cout << "the currentpage Num in elseif is " << currentPageNum << std::endl;
             LeafNodeInt* p = (LeafNodeInt *) currentPageData;
             outRid = p->ridArray[0];
         }
  	    else
         {
+            std::cout << "why I am here " << leafnode->keyArray[nextEntry+1] << std::endl;
             LeafNodeInt* p = (LeafNodeInt *) currentPageData;
  	        outRid = p ->ridArray[nextEntry];
  	        nextEntry = nextEntry + 1;
@@ -897,9 +938,12 @@ const void BTreeIndex::scanNext(RecordId& outRid)
     }
  	else
     {
+	bufMgr -> unPinPage(file, currentPageNum, false);
         nextEntry = 0;
         currentPageNum = leafnode->rightSibPageNo;
+	std::cout << "The rightSibPageNo is " << currentPageNum << std::endl;
         bufMgr -> readPage(file, currentPageNum, currentPageData);
+	std::cout << "The new current page number is " << currentPageNum << std::endl;
         LeafNodeInt* p = (LeafNodeInt *) currentPageData;
         outRid = p->ridArray[0];
     }
@@ -912,13 +956,16 @@ const void BTreeIndex::scanNext(RecordId& outRid)
 //
 const void BTreeIndex::endScan() 
 {
-    if (!scanExecuting)
-    {
-        throw ScanNotInitializedException();
-    }
+    //if (!scanExecuting)
+    //{
+        //throw ScanNotInitializedException();
+    //}
     scanExecuting = false;
     // unpin
-    bufMgr -> unPinPage(file, currentPageNum, false);
+    std::cout << "=======================================in endScan the currentPageNum is ==============================================" << currentPageNum << std::endl;
+    //try {
+        //bufMgr -> unPinPage(file, currentPageNum, false);
+    //}catch(PageNotPinnedException e){}
     // reset
     currentPageData = nullptr;
     currentPageNum = -1;
@@ -947,20 +994,24 @@ const bool BTreeIndex::checkValid(int key)
 	return false;
 }
 
-const void BTreeIndex::search_key_in_leaf(LeafNodeInt* LeafNode, int PageNum)
+const bool BTreeIndex::search_key_in_leaf(LeafNodeInt* LeafNode, int PageNum)
 {
-    std::cout<< " the first key is" <<  LeafNode ->keyArray[0] << std::endl;
+    // std::cout<< " the first key is" <<  LeafNode ->keyArray[0] << std::endl;
     for(int i = 0;i < INTARRAYLEAFSIZE; i++)
     {
-        std::cout<< "i :" << i <<" is " <<  LeafNode ->keyArray[i] << std::endl;
+        // std::cout<< "i :" << i <<" is " <<  LeafNode ->keyArray[i] << "high int is " << highValInt << "low int is " << lowValInt << std::endl;
         if(checkValid( LeafNode ->keyArray[i]))
         {
-            nextEntry = i;
+            std::cout << "I find one in the range " << LeafNode -> keyArray[i] << std::endl;
+	    nextEntry = i;
             currentPageNum = PageNum;
-            return ;
+            return true;
         }
     }
-    throw NoSuchKeyFoundException();
+    //std::cout << "============================================in search key I unPin pageNum ===========================" << PageNum << std::endl;
+    // bufMgr -> unPinPage(file, PageNum, false);
+    //throw NoSuchKeyFoundException();
+    return false;
 }
 
 }
