@@ -300,9 +300,13 @@ class BTreeIndex {
 
 	PageKeyPair<int>* split_leaf(LeafNodeInt* leafNode, PageId currNum, RIDKeyPair<int> pair);
 
-  PageKeyPair<int>* split_nonleaf(PageId curpagenum, NonLeafNodeInt* nonLeafNode, PageKeyPair<int> pair);
+  PageKeyPair<int>* split_nonleaf(PageId currNum, NonLeafNodeInt* nonLeafNode, PageKeyPair<int> pair);
 
-    const bool find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeisleaf, bool* findKey);
+    const bool find_leafnode(NonLeafNodeInt* nonLeafNode, int nextNodeIsLeaf);
+    PageKeyPair<int>* moveUpPair(PageKeyPair<int>* leftPair, PageKeyPair<int>* rightPair, int level, PageId newSiblingNum, PageId currNum);
+    const bool check_node(NonLeafNodeInt* nonLeafNode, int index, bool isRecursion);
+    const bool check_leaf(NonLeafNodeInt* nonLeafNode, int index);
+    const bool check_nonleaf(NonLeafNodeInt* nonLeafNode, int index);
 
   void printOutAllTree();
 
