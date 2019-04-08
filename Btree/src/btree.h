@@ -349,7 +349,8 @@ class BTreeIndex {
      *                           returns null if a new root is created
      *                           Otherwise returns a pair of page and key which needs to be moved up
      */
-    PageKeyPair<int>* moveUpPair(PageKeyPair<int>* leftPair, PageKeyPair<int>* rightPair, int level, PageId newSiblingNum, PageId currNum);
+    PageKeyPair<int>* moveUpPair(PageKeyPair<int>* leftPair, PageKeyPair<int>* rightPair,
+                                            int level, PageId newSiblingNum, PageId currNum);
     /**
      * This method is used to recursively find if lowIntVal is within the range of a leaf node
      * @param nonLeafNode    the pointer to the non leaf node struct
@@ -408,7 +409,9 @@ class BTreeIndex {
    * @param bufMgrIn						Buffer Manager Instance
    * @param attrByteOffset			Offset of attribute, over which index is to be built, in the record
    * @param attrType						Datatype of attribute over which index is built
-   * @throws  BadIndexInfoException     If the index file already exists for the corresponding attribute, but values in metapage(relationName, attribute byte offset, attribute type etc.) do not match with values received through constructor parameters.
+   * @throws  BadIndexInfoException     If the index file already exists for the corresponding attribute,
+   *                            but values in metapage(relationName, attribute byte offset, attribute type etc.)
+   *                            do not match with values received through constructor parameters.
    */
 	BTreeIndex(const std::string & relationName, std::string & outIndexName,
 						BufMgr *bufMgrIn,	const int attrByteOffset,	const Datatype attrType);
@@ -425,9 +428,12 @@ class BTreeIndex {
 
   /**
 	 * Insert a new entry using the pair <value,rid>. 
-	 * Start from root to recursively find out the leaf to insert the entry in. The insertion may cause splitting of leaf node.
-	 * This splitting will require addition of new leaf page number entry into the parent non-leaf, which may in-turn get split.
-	 * This may continue all the way upto the root causing the root to get split. If root gets split, metapage needs to be changed accordingly.
+	 * Start from root to recursively find out the leaf to insert the entry in.
+     * The insertion may cause splitting of leaf node.
+	 * This splitting will require addition of new leaf page number entry into the parent non-leaf,
+     * which may in-turn get split.
+	 * This may continue all the way upto the root causing the root to get split. If root gets split,
+     * metapage needs to be changed accordingly.
 	 * Make sure to unpin pages as soon as you can.
    * @param key			Key to insert, pointer to integer/double/char string
    * @param rid			Record ID of a record whose entry is getting inserted into the index.
@@ -455,8 +461,10 @@ class BTreeIndex {
 
   /**
 	 * Fetch the record id of the next index entry that matches the scan.
-	 * Return the next record from current page being scanned. If current page has been scanned to its entirety, move on to the right sibling of current page, if any exists, to start scanning that page. Make sure to unpin any pages that are no longer required.
-   * @param outRid	RecordId of next record found that satisfies the scan criteria returned in this
+	 * Return the next record from current page being scanned. If current page has been scanned to its entirety,
+     * move on to the right sibling of current page, if any exists, to start scanning that page.
+     * Make sure to unpin any pages that are no longer required.
+     * @param outRid	RecordId of next record found that satisfies the scan criteria returned in this
 	 * @throws ScanNotInitializedException If no scan has been initialized.
 	 * @throws IndexScanCompletedException If no more records, satisfying the scan criteria, are left to be scanned.
 	**/
