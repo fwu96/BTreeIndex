@@ -25,14 +25,15 @@ namespace badgerdb
      * BTreeIndex Constructor.
 	 * Check to see if the corresponding index file exists. If so, open the file.
 	 * If not, create it and insert entries for every tuple in the base relation using FileScan class.
+     *
      * @param relationName Name of file.
      * @param outIndexName Return the name of index file.
      * @param bufMgrIn Buffer Manager Instance
      * @param attrByteOffset Offset of attribute, over which index is to be built, in the record
      * @param attrType Datatype of attribute over which index is built
      * @throws  BadIndexInfoException If the index file already exists for the corresponding attribute,
-     * but values in metapage(relationName, attribute byte offset, attribute type etc.)
-     * do not match with values received through constructor parameters.
+     *                     but values in metapage(relationName, attribute byte offset, attribute type etc.)
+     *                     do not match with values received through constructor parameters.
      **/
     BTreeIndex::BTreeIndex(const std::string & relationName,
                            std::string & outIndexName,
@@ -91,7 +92,7 @@ namespace badgerdb
                     fc.scanNext(scanRid);
                     std::string recordStr = fc.getRecord();
                     const char *record = recordStr.c_str();
-                    insertEntry(record + attrByteOffset,scanRid);
+                    insertEntry(record + attrByteOffset, scanRid);
                 }
             }
             // Hit the end
@@ -127,7 +128,7 @@ namespace badgerdb
     BTreeIndex::~BTreeIndex()
     {
         scanExecuting = false;
-        bufMgr -> flushFile(BTreeIndex::file);
+        bufMgr -> flushFile(file);
         delete file;
         file = nullptr;
     }
@@ -140,6 +141,7 @@ namespace badgerdb
       * This may continue all the way upto the root causing the root to get split.
       * If root gets split, metapage needs to be changed accordingly.
       * Make sure to unpin pages as soon as you can.
+      *
       * @param key Key to insert, pointer to integer/double/char string
       * @param rid Record ID of a record whose entry is getting inserted into the index.
     **/
@@ -165,6 +167,7 @@ namespace badgerdb
       * If another scan is already executing, that needs to be ended here.
       * Set up all the variables for scan. Start from root to find out the leaf page that contains the first RecordID
       * that satisfies the scan parameters. Keep that page pinned in the buffer pool.
+      *
       * @param lowVal	Low value of range, pointer to integer / double / char string
       * @param lowOp		Low operator (GT/GTE)
       * @param highVal	High value of range, pointer to integer / double / char string
@@ -210,13 +213,13 @@ namespace badgerdb
         if (rootPageNum == 2)
         {
             LeafNodeInt* rootLeaf = (LeafNodeInt*)tmp;
-            findKey = search_key_in_leaf(rootLeaf , rootPageNum);
+            findKey = searchKeyInLeaf(rootLeaf, rootPageNum);
         }
             // if root is not leaf, recursing through all children of root
         else
         {
-            NonLeafNodeInt* root = (NonLeafNodeInt*) tmp;
-            findKey = find_leafnode(root, root -> level);
+            NonLeafNodeInt* root = (NonLeafNodeInt*)tmp;
+            findKey = findLeafNode(root, root->level);
         }
         bufMgr -> unPinPage(file, rootPageNum, false);
         // does not find key
@@ -243,7 +246,6 @@ namespace badgerdb
         // Scan is not initialized
         if (!scanExecuting)
         {
-            std::cout << "scan not initialized" << std::endl;
             throw ScanNotInitializedException();
         }
         LeafNodeInt* currNode = (LeafNodeInt*) currentPageData;
@@ -278,6 +280,7 @@ namespace badgerdb
     }
     /**
 	 * Terminate the current scan. Unpin any pinned pages. Reset scan specific variables.
+     *
 	 * @throws ScanNotInitializedException If no scan has been initialized.
 	**/
     const void BTreeIndex::endScan()
@@ -294,6 +297,7 @@ namespace badgerdb
     }
     /**
       * Recursively insert entry into file
+      *
       * @param pair inserting entry
       * @param currNum current page number
       * @param ifLeaf if a node is leaf
@@ -349,14 +353,14 @@ namespace badgerdb
                 // if current node has space
                 if (nonLeaf -> pageNoArray[INTARRAYNONLEAFSIZE] == 0)
                 {
-                    insert_nonleaf(*pagePairTmp, *pagePairTmp, nonLeaf);
+                    insertNonLeaf(*pagePairTmp, *pagePairTmp, nonLeaf);
                     bufMgr -> unPinPage(file, currNum, true);
                     return nullptr;
                 }
                 // if current node has no space
                 else
                 {
-                    PageKeyPair<int>* moveUpMidPair = split_nonleaf(currNum, nonLeaf, *pagePairTmp);
+                    PageKeyPair<int>* moveUpMidPair = splitNonleaf(currNum, nonLeaf, *pagePairTmp);
                     bufMgr -> unPinPage(file, currNum, true);
                     return moveUpMidPair;
                 }
@@ -374,7 +378,7 @@ namespace badgerdb
             // if current node has space
             if (leafNode -> ridArray[INTARRAYLEAFSIZE - 1].slot_number == 0)
             {
-                insert_leaf(pair, leafNode);
+                insertLeaf(pair, leafNode);
                 bufMgr -> unPinPage(file, currNum, true);
                 return nullptr;
             }
@@ -382,7 +386,7 @@ namespace badgerdb
             else
             {
                 // split
-                PageKeyPair<int>* moveUpMidPair = split_leaf(leafNode, currNum, pair);
+                PageKeyPair<int>* moveUpMidPair = splitLeaf(leafNode, currNum, pair);
                 bufMgr -> unPinPage(file, currNum, true);
                 return moveUpMidPair;
             }
@@ -390,11 +394,12 @@ namespace badgerdb
     }
     /**
       * Insert into non-leaf node
+      *
       * @param pari1 the left pair
       * @param pair2 the right pair
       * @param nonLeafNode current node working on
     **/
-    const void BTreeIndex::insert_nonleaf(PageKeyPair<int> pair1, PageKeyPair<int> pair2, NonLeafNodeInt* nonLeafNode)
+    const void BTreeIndex::insertNonLeaf(PageKeyPair<int> pair1, PageKeyPair<int> pair2, NonLeafNodeInt *nonLeafNode)
     {
         // insert into an empty non-leaf node
         if (nonLeafNode -> pageNoArray[0] == 0)
@@ -432,10 +437,11 @@ namespace badgerdb
     }
     /**
       * Insert into leaf node
+      *
       * @param pair the RidKeyPair
       * @param leafNode current node working on
     **/
-    const void BTreeIndex::insert_leaf(RIDKeyPair<int> pair, LeafNodeInt* leafNode)
+    const void BTreeIndex::insertLeaf(RIDKeyPair<int> pair, LeafNodeInt *leafNode)
     {
         RIDKeyPair<int> pairContainer = pair;
         RIDKeyPair<int> pairTmp;
@@ -464,12 +470,13 @@ namespace badgerdb
     }
     /**
       * Split leaf node
+      *
       * @param leafNode current leaf node
       * @param currNum current page number
       * @param pair the RIDKeyPair<int>
       * @return PageKeyPair<int>*
     **/
-    PageKeyPair<int>* BTreeIndex::split_leaf(LeafNodeInt* leafNode, PageId currNum, RIDKeyPair<int> pair)
+    PageKeyPair<int>* BTreeIndex::splitLeaf(LeafNodeInt *leafNode, PageId currNum, RIDKeyPair<int> pair)
     {
         // create a new leaf
         Page* newSibling;
@@ -497,12 +504,12 @@ namespace badgerdb
         // insert into the left leaf
         if (pair.key < siblingNode -> keyArray[0])
         {
-            insert_leaf(pair, leafNode);
+            insertLeaf(pair, leafNode);
         }
-            //   insert into the sibling leaf
+        // insert into the sibling leaf
         else
         {
-            insert_leaf(pair, siblingNode);
+            insertLeaf(pair, siblingNode);
         }
         // generate the new mid key pair
         PageKeyPair<int>* left_pair = new PageKeyPair<int>;
@@ -513,12 +520,13 @@ namespace badgerdb
     }
     /**
       * Split non-leaf node
+      *
       * @param currNum current page number
       * @param nonLeafNode current node working on
       * @param pair the PageKeyPair
       * @return PageKeyPair<int>*
      **/
-    PageKeyPair<int>* BTreeIndex::split_nonleaf(PageId currNum, NonLeafNodeInt* nonLeafNode, PageKeyPair<int> pair)
+    PageKeyPair<int>* BTreeIndex::splitNonleaf(PageId currNum, NonLeafNodeInt *nonLeafNode, PageKeyPair<int> pair)
     {
         // create a new non-leaf node
         Page* newSibling;
@@ -542,12 +550,12 @@ namespace badgerdb
         // insert into the left non-leaf node
         if (pair.key < siblingNode -> keyArray[0])
         {
-            insert_nonleaf(pair, pair, nonLeafNode);
+            insertNonLeaf(pair, pair, nonLeafNode);
         }
         // insert into the right non-leaf node
         else
         {
-            insert_nonleaf(pair, pair, siblingNode);
+            insertNonLeaf(pair, pair, siblingNode);
         }
         PageKeyPair<int>* left_pair = new PageKeyPair<int>;
         PageKeyPair<int>* right_pair = new PageKeyPair<int>;
@@ -576,7 +584,7 @@ namespace badgerdb
             NonLeafNodeInt* newRootNode = (NonLeafNodeInt*) newRoot;
             newRootNode -> level = level;
             // insert the key of the new leaves to the new root
-            insert_nonleaf(*leftPair, *rightPair, newRootNode);
+            insertNonLeaf(*leftPair, *rightPair, newRootNode);
             bufMgr -> unPinPage(file, newRootNum, true);
             bufMgr -> unPinPage(file, newSiblingNum, true);
             changeRootNum(newRootNum);
@@ -591,6 +599,7 @@ namespace badgerdb
     }
     /**
      * Updating the root
+     *
      * @param newRootNum new root page number
      */
     const void BTreeIndex::changeRootNum(PageId newRootNum)
@@ -604,26 +613,44 @@ namespace badgerdb
     }
     /**
      * check if a node is non_leaf node
+     *
      * @param nonLeafNode
      * @param index
      * @return if needed recursive call
      */
-    const bool BTreeIndex::check_nonleaf(NonLeafNodeInt* nonLeafNode, int index)
+    const bool BTreeIndex::checkNonLeaf(NonLeafNodeInt *nonLeafNode, int index)
     {
         Page* page;
         bufMgr->readPage(file,nonLeafNode -> pageNoArray[index],page);
         NonLeafNodeInt* p = (NonLeafNodeInt*) page;
-        bool findKey = find_leafnode(p, p->level);
+        bool findKey = findLeafNode(p, p->level);
         bufMgr -> unPinPage(file, nonLeafNode -> pageNoArray[index], false);
         return findKey;
     }
     /**
-     * find leaf node
-     * @param nonLeafNode
-     * @param nextNodeIsLeaf
-     * @return bool if find the leaf node
-     */
-    const bool BTreeIndex::find_leafnode(NonLeafNodeInt* nonLeafNode, int nextNodeIsLeaf)
+      * check if node is leaf
+      *
+      * @param nonLeafNode
+      * @param index
+      * @return if need recursive call
+    **/
+    const bool BTreeIndex::checkLeaf(NonLeafNodeInt *nonLeafNode, int index)
+    {
+        Page* page;
+        bufMgr->readPage(file,nonLeafNode -> pageNoArray[index],page);
+        LeafNodeInt* p = (LeafNodeInt*) page;
+        bool findKey = searchKeyInLeaf(p, nonLeafNode->pageNoArray[index]);
+        bufMgr -> unPinPage(file, nonLeafNode -> pageNoArray[index], false);
+        return findKey;
+    }
+    /**
+      * find leaf node
+      *
+      * @param nonLeafNode
+      * @param nextNodeIsLeaf
+      * @return bool if find the leaf node
+    **/
+    const bool BTreeIndex::findLeafNode(NonLeafNodeInt *nonLeafNode, int nextNodeIsLeaf)
     {
         // the next node is a nonLeafNode
         if (nextNodeIsLeaf == 0)
@@ -634,15 +661,15 @@ namespace badgerdb
                 {
                     if (i == 0 && nonLeafNode -> keyArray[i] > lowValInt)
                     {
-                        return check_nonleaf(nonLeafNode, i);
+                        return checkNonLeaf(nonLeafNode, i);
                     }
                     else if (nonLeafNode -> keyArray[i] <= lowValInt && lowValInt < nonLeafNode -> keyArray[i + 1])
                     {
-                        return check_nonleaf(nonLeafNode, i + 1);
+                        return checkNonLeaf(nonLeafNode, i + 1);
                     }
                     else if (nonLeafNode -> keyArray[i + 1] == 0 && nonLeafNode -> keyArray[i] <= lowValInt)
                     {
-                        return check_nonleaf(nonLeafNode, i + 1);
+                        return checkNonLeaf(nonLeafNode, i + 1);
                     }
                 }
                 // i == INTARRAYNONLEAFSIZE - 1
@@ -651,7 +678,7 @@ namespace badgerdb
                     // insert key >= the last key
                     if (nonLeafNode -> keyArray[i] <= lowValInt)
                     {
-                        return check_nonleaf(nonLeafNode, i + 1);
+                        return checkNonLeaf(nonLeafNode, i + 1);
                     }
                 }
             }
@@ -665,22 +692,22 @@ namespace badgerdb
                 {
                     if( i == 0 && nonLeafNode -> keyArray[i] > lowValInt)
                     {
-                        return check_leaf(nonLeafNode, i);
+                        return checkLeaf(nonLeafNode, i);
                     }
                     else if (nonLeafNode -> keyArray[i] <= lowValInt && lowValInt < nonLeafNode -> keyArray[i + 1])
                     {
-                        return check_leaf(nonLeafNode, i + 1);
+                        return checkLeaf(nonLeafNode, i + 1);
                     }
                     else if (nonLeafNode -> keyArray[i + 1] == 0 && nonLeafNode -> keyArray[i] <= lowValInt)
                     {
-                        return check_leaf(nonLeafNode, i + 1);
+                        return checkLeaf(nonLeafNode, i + 1);
                     }
                 }
                 else
                 {
                     if (nonLeafNode -> keyArray[i] <= lowValInt)
                     {
-                        return check_leaf(nonLeafNode, i + 1);
+                        return checkLeaf(nonLeafNode, i + 1);
                     }
                 }
             }
@@ -688,23 +715,8 @@ namespace badgerdb
         return false;
     }
     /**
-     * check if node is leaf
-     *
-     * @param nonLeafNode
-     * @param index
-     * @return if need recursive call
-     */
-    const bool BTreeIndex::check_leaf(NonLeafNodeInt* nonLeafNode, int index)
-    {
-        Page* page;
-        bufMgr->readPage(file,nonLeafNode -> pageNoArray[index],page);
-        LeafNodeInt* p = (LeafNodeInt*) page;
-        bool findKey = search_key_in_leaf(p, nonLeafNode -> pageNoArray[index]);
-        bufMgr -> unPinPage(file, nonLeafNode -> pageNoArray[index], false);
-        return findKey;
-    }
-    /**
      * Check if the key is valid
+     *
      * @param key
      * @return checking result
      */
@@ -729,11 +741,12 @@ namespace badgerdb
     }
     /**
      * Searching key in the given leaf node
+     * 
      * @param LeafNode
      * @param PageNum
      * @return
      */
-    const bool BTreeIndex::search_key_in_leaf(LeafNodeInt* LeafNode, int PageNum)
+    const bool BTreeIndex::searchKeyInLeaf(LeafNodeInt *LeafNode, int PageNum)
     {
         for (int i = 0;i < INTARRAYLEAFSIZE; i++)
         {

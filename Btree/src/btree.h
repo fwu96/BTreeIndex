@@ -294,30 +294,30 @@ class BTreeIndex {
 
   PageKeyPair<int>* insert(RIDKeyPair<int> pair, PageId currPageNum, int isLeaf);
 
-  const void insert_nonleaf(PageKeyPair<int> pair1, PageKeyPair<int> pair2, NonLeafNodeInt* nonLeafNode);
+  const void insertNonLeaf(PageKeyPair<int> pair1, PageKeyPair<int> pair2, NonLeafNodeInt *nonLeafNode);
 
-  const void insert_leaf(RIDKeyPair<int> pair, LeafNodeInt* leafNode);
+  const void insertLeaf(RIDKeyPair<int> pair, LeafNodeInt *leafNode);
 
-	PageKeyPair<int>* split_leaf(LeafNodeInt* leafNode, PageId currNum, RIDKeyPair<int> pair);
+	PageKeyPair<int>* splitLeaf(LeafNodeInt *leafNode, PageId currNum, RIDKeyPair<int> pair);
 
-  PageKeyPair<int>* split_nonleaf(PageId currNum, NonLeafNodeInt* nonLeafNode, PageKeyPair<int> pair);
+  PageKeyPair<int>* splitNonleaf(PageId currNum, NonLeafNodeInt *nonLeafNode, PageKeyPair<int> pair);
 
-    const bool find_leafnode(NonLeafNodeInt* nonLeafNode, int nextNodeIsLeaf);
+    const bool findLeafNode(NonLeafNodeInt *nonLeafNode, int nextNodeIsLeaf);
     PageKeyPair<int>* moveUpPair(PageKeyPair<int>* leftPair, PageKeyPair<int>* rightPair, int level, PageId newSiblingNum, PageId currNum);
     const bool check_node(NonLeafNodeInt* nonLeafNode, int index, bool isRecursion);
-    const bool check_leaf(NonLeafNodeInt* nonLeafNode, int index);
-    const bool check_nonleaf(NonLeafNodeInt* nonLeafNode, int index);
+    const bool checkLeaf(NonLeafNodeInt *nonLeafNode, int index);
+    const bool checkNonLeaf(NonLeafNodeInt *nonLeafNode, int index);
 
   void printOutAllTree();
 
   void printThisLeft(PageId tmpNo);
   const bool checkValid(int key);
-  const bool search_key_in_leaf(LeafNodeInt* LeafNode , int curnum);
+  const bool searchKeyInLeaf(LeafNodeInt *LeafNode, int PageNum);
   const void changeRootNum(PageId newRootNum);
  public:
 
   /**
-   * BTreeIndex Constructor. 
+   * BTreeIndex Constructor.
 	 * Check to see if the corresponding index file exists. If so, open the file.
 	 * If not, create it and insert entries for every tuple in the base relation using FileScan class.
    *
