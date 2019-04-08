@@ -48,18 +48,16 @@ namespace badgerdb
         attributeType = attrType;
         scanExecuting = false;
         bufMgr = bufMgrIn;
+        this -> attrByteOffset = attrByteOffset;
+        headerPageNum = 1;
+        leafOccupancy = 0;
+        nodeOccupancy = 0;
         // File does not exist
         try
         {
             // create an index file
             file = new BlobFile(indexName,true);
-            // initialize related private fields
-            //bufMgr = bufMgrIn;
-            headerPageNum = 1;
             rootPageNum = 2;
-            this -> attrByteOffset = attrByteOffset;
-            leafOccupancy = 0;
-            nodeOccupancy = 0;
             // Alloc a new page
             Page* headerPage;
             bufMgr -> allocPage(file, headerPageNum, headerPage);
@@ -77,7 +75,6 @@ namespace badgerdb
                 RecordId scanRid;
                 // get the first record and create a root
                 fc.scanNext(scanRid);
-                //Assuming RECORD.i is our key, lets extract the key, which we know is INTEGER and whose byte offset is also know inside the record.
                 std::string recordStr = fc.getRecord();
                 const char *record = recordStr.c_str();
                 int key = *((int *)(record + offsetof (RECORD, i)));
@@ -90,7 +87,6 @@ namespace badgerdb
                 while(1)
                 {
                     fc.scanNext(scanRid);
-                    //Assuming RECORD.i is our key, lets extract the key, which we know is INTEGER and whose byte offset is also know inside the record.
                     std::string recordStr = fc.getRecord();
                     const char *record = recordStr.c_str();
                     int key = *((int *)(record + offsetof (RECORD, i)));
@@ -100,23 +96,14 @@ namespace badgerdb
             // Hit the end
             catch (EndOfFileException e)
             {
-                //std::cout << "===========================put all records===========================" << std::endl;
                 bufMgr -> flushFile(file);
             }
         }
         // File exists
         catch (FileExistsException e)
         {
-            // open an existing file
+            // open && read an existing file
             file = new BlobFile(indexName,false);
-            //std::cout << "=====================================catch file exist exception=====================================" << std::endl;
-            // initialize related private fields
-            //bufMgr = bufMgrIn;
-            headerPageNum = 1;
-            this -> attrByteOffset = attrByteOffset;
-            leafOccupancy = 0;
-            nodeOccupancy = 0;
-            // Read existing header page
             Page* headerPage;
             bufMgr -> readPage(file, headerPageNum, headerPage);
             IndexMetaInfo* metaPage = (IndexMetaInfo*)headerPage;
