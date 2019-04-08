@@ -67,18 +67,18 @@ BufMgr * bufMgr = new BufMgr(100);
 void createRelationForward();
 void createRelationBackward();
 void createRelationRandom();
-void createRelationRedomWithSize(int size);
-void createRelationForwardWithSize(int size);
-void createRelationBackwardWithSize(int size);
-void createRelationWithRange(int left, int right);
+void randomlyCreateRelationInSize(int size);
+void forwardCreateRelationInSize(int size);
+void backwardCreateRelationInSize(int size);
+void forwardCreateRelationInRange(int left, int right);
 void intTests();
 int intScan(BTreeIndex *index, int lowVal, Operator lowOp, int highVal, Operator highOp);
 void indexTests();
-void indexTestsWithNum(int num);
-void TestRelationSize10000();
-void TestEmptyTree();
-void TestWithoutSplit();
-void TestHugeNum();
+void testType(int num);
+void testRelationSize10000();
+void testEmptyTree();
+void testNoSplit();
+void testHugeNum();
 void testRange();
 void test1();
 void test2();
@@ -88,6 +88,7 @@ void test5();
 void test6();
 void test7();
 void test8();
+void test9();
 void errorTests();
 void deleteRelation();
 
@@ -158,16 +159,18 @@ int main(int argc, char **argv)
 	std::cout << "Finish Test Two" << std::endl;
 	test3();
 	std::cout << "Finish Test Three" << std::endl;
-	 //test4();
-	 //std::cout << "Finish Test Four" << std::endl;
-	 //test5();
-	 //std::cout << "Finish Test Five" << std::endl;
-	 //test6();
-	 //std::cout << "Finish Test Six" << std::endl;
-	 //test7();
-	 //std::cout << "Finish Test Seven" << std::endl;
-	 //test8();
-	 //std::cout << "Finish Test Eight" << std::endl;
+	test4();
+	std::cout << "Finish Test Four" << std::endl;
+	test5();
+	std::cout << "Finish Test Five" << std::endl;
+	test6();
+	std::cout << "Finish Test Six" << std::endl;
+	//test7();
+	//std::cout << "Finish Test Seven" << std::endl;
+	test8();
+	std::cout << "Finish Test Eight" << std::endl;
+	test9();
+	std::cout << "Finish Test Nine" << std::endl;
 	errorTests();
 	std::cout << "Finish Error Test" << std::endl;
 
@@ -210,18 +213,18 @@ void test3()
 void test4()
 {
     std::cout << "--------------------" << std::endl;
-    std::cout << "createRelationRedomWithSize"<< std::endl;
-    createRelationRedomWithSize(10000);
-    indexTestsWithNum(4);
+    std::cout << "Test for randomly inserting with given size"<< std::endl;
+    randomlyCreateRelationInSize(10000);
+    testType(4);
     deleteRelation();
 }
 
 void test5()
 {
     std::cout << "--------------------" << std::endl;
-    std::cout << "testEmptyTree" << std::endl;
-    createRelationForwardWithSize(0);
-    indexTestsWithNum(5);
+    std::cout << "Test for empty tree" << std::endl;
+    forwardCreateRelationInSize(0);
+    testType(5);
     deleteRelation();
 }
 
@@ -229,56 +232,62 @@ void test6()
 {
     // root not split
     std::cout << "--------------------" << std::endl;
-    std::cout << "test root not split" << std::endl;
-    createRelationForwardWithSize(300);
-    indexTestsWithNum(6);
+    std::cout << "Test for forward inserting with no split on root" << std::endl;
+    forwardCreateRelationInSize(300);
+    testType(6);
     deleteRelation();
 }
 
 void test7()
 {
     std::cout << "--------------------" << std::endl;
-    std::cout << "test huge amount of element" << std::endl;
-    createRelationForwardWithSize(10000000);
-    indexTestsWithNum(7);
+    std::cout << "Test for huge data size" << std::endl;
+    forwardCreateRelationInSize(1000000);
+    testType(7);
     deleteRelation();
 }
 void test8()
 {
     std::cout << "--------------------" << std::endl;
-    std::cout << "test range" << std::endl;
-    createRelationWithRange(-500,500);
-    indexTestsWithNum(8);
+    std::cout << "Test for forward inserting with given range" << std::endl;
+    forwardCreateRelationInRange(-500, 500);
+    testType(8);
     deleteRelation();
 }
-void indexTestsWithNum(int num)
+void test9()
+{
+    std::cout << "--------------------" << std::endl;
+    std::cout << "Test for backward inserting with given size" << std::endl;
+    backwardCreateRelationInSize(300);
+    testType(6);
+    deleteRelation();
+}
+void testType(int num)
 {
     if(testNum == 1)
     {
-        if(num == 4)
+        switch (num)
         {
-            //createRelationRedomWithSize(10000)
-            TestRelationSize10000();
-        }
-        else if(num == 5)
-        {
-            TestEmptyTree();
-        }
-        else if(num == 6)
-        {
-            TestWithoutSplit();
-        }
-        else if (num == 7)
-        {
-            TestHugeNum();
-        }
-        else if(num == 8)
-        {
-            testRange();
+            case 4:
+                testRelationSize10000();
+                break;
+            case 5:
+                testEmptyTree();
+                break;
+            case 6:
+                testNoSplit();
+                break;
+            case 7:
+                testHugeNum();
+                break;
+            case 8:
+                testRange();
+                break;
+            default:
+                break;
         }
         try
         {
-            std::cout << "try to remove file in the indexTests " << std::endl;
             File::remove(intIndexName);
         }
         catch(FileNotFoundException e)
@@ -288,9 +297,9 @@ void indexTestsWithNum(int num)
 }
 
 
-void TestRelationSize10000()
+void testRelationSize10000()
 {
-    std::cout << "----- TestRelationSize10000 -----" << std::endl;
+    std::cout << "----- testRelationSize10000 -----" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
     checkPassFail(intScan(&index,25,GT,40,LT), 14)
@@ -301,9 +310,9 @@ void TestRelationSize10000()
     checkPassFail(intScan(&index,300,GT,400,LT), 99)
     checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
 }
-void TestEmptyTree()
+void testEmptyTree()
 {
-    std::cout << "-------- TestEmptyTree --------" << std::endl;
+    std::cout << "-------- testEmptyTree --------" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
     checkPassFail(intScan(&index,25,GT,40,LT), 0)
@@ -314,10 +323,10 @@ void TestEmptyTree()
     checkPassFail(intScan(&index,300,GT,400,LT), 0)
     checkPassFail(intScan(&index,3000,GTE,4000,LT), 0)
 }
-void TestWithoutSplit()
+void testNoSplit()
 {
     //300
-    std::cout << "---------- TestWithoutSplit ---------" << std::endl;
+    std::cout << "---------- testNoSplit ---------" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
     checkPassFail(intScan(&index,25,GT,40,LT), 14)
@@ -328,10 +337,10 @@ void TestWithoutSplit()
     checkPassFail(intScan(&index,300,GT,400,LT), 0)
     checkPassFail(intScan(&index,3000,GTE,4000,LT), 0)
 }
-void TestHugeNum()
+void testHugeNum()
 {
     // 10000000
-    std::cout << "---------- TestHugeNum ---------- " << std::endl;
+    std::cout << "---------- testHugeNum ---------- " << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
     checkPassFail(intScan(&index,25,GT,40,LT), 14)
@@ -340,29 +349,29 @@ void TestHugeNum()
     checkPassFail(intScan(&index,996,GT,1001,LT), 4)
     checkPassFail(intScan(&index,0,GT,1,LT), 0)
     checkPassFail(intScan(&index,300,GT,400,LT), 99)
-    checkPassFail(intScan(&index,0,GTE, 10000000,LT),10000000)
+    checkPassFail(intScan(&index,0,GTE, 1000000,LT), 1000000)
 }
 
 void testRange()
 {
-    // createRelationWithRange(-500,500);
+    // forwardCreateRelationInRange(-500,500);
     std::cout << "----------- testRange -----------" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
     //
     checkPassFail(intScan(&index,25,GT,40,LT), 14)
     checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
-    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
+    checkPassFail(intScan(&index,-3,GT,3,LT), 5)
     checkPassFail(intScan(&index,-300,GTE,300,LTE), 601)
     checkPassFail(intScan(&index,0,GT,1,LT), 0)
     checkPassFail(intScan(&index,300,GT,400,LT), 99)
     checkPassFail(intScan(&index,-1,GTE,0,LT), 1)
 }
 // -----------------------------------------------------------------------------
-// createRelationWithRange
+// forwardCreateRelationInRange
 // -----------------------------------------------------------------------------
 
-void createRelationWithRange(int left, int right)
+void forwardCreateRelationInRange(int left, int right)
 {
     std::vector<RecordId> ridVec;
     // destroy any old copies of relation file
@@ -409,10 +418,10 @@ void createRelationWithRange(int left, int right)
 
 
 // -----------------------------------------------------------------------------
-// createRelationBackwardWithSize
+// backwardCreateRelationInSize
 // -----------------------------------------------------------------------------
 
-void createRelationBackwardWithSize(int size)
+void backwardCreateRelationInSize(int size)
 {
     // destroy any old copies of relation file
     try
@@ -457,10 +466,10 @@ void createRelationBackwardWithSize(int size)
 }
 
 // -----------------------------------------------------------------------------
-// createRelationForwardWithSize
+// forwardCreateRelationInSize
 // -----------------------------------------------------------------------------
 
-void createRelationForwardWithSize(int size)
+void forwardCreateRelationInSize(int size)
 {
     std::vector<RecordId> ridVec;
     // destroy any old copies of relation file
@@ -506,9 +515,9 @@ void createRelationForwardWithSize(int size)
 }
 
 // -----------------------------------------------------------------------------
-// createRelationRedomWithSize
+// randomlyCreateRelationInSize
 // -----------------------------------------------------------------------------
-void createRelationRedomWithSize(int size)
+void randomlyCreateRelationInSize(int size)
 {
     // destroy any old copies of relation file
     try
@@ -744,7 +753,6 @@ void indexTests()
     intTests();
 		try
 		{
-			std::cout << "try to remove file in the indexTests " << std::endl;
 			File::remove(intIndexName);
 		}
   	catch(FileNotFoundException e)
@@ -951,7 +959,6 @@ void errorTests()
 
 void deleteRelation()
 {
-    std::cout << "the file will be deleted is " << file1 -> filename() << std::endl;
 	if(file1)
 	{
 		bufMgr->flushFile(file1);
@@ -960,7 +967,6 @@ void deleteRelation()
 	}
 	try
 	{
-	    std::cout << "try to remove file " << relationName << " in deleteRelation"<< std::endl;
 		File::remove(relationName);
 	}
 	catch(FileNotFoundException e)

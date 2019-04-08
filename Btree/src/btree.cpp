@@ -34,7 +34,7 @@ namespace badgerdb
      * @throws  BadIndexInfoException If the index file already exists for the corresponding attribute,
      *                     but values in metapage(relationName, attribute byte offset, attribute type etc.)
      *                     do not match with values received through constructor parameters.
-     **/
+     */
     BTreeIndex::BTreeIndex(const std::string & relationName,
                            std::string & outIndexName,
                            BufMgr *bufMgrIn,
@@ -63,7 +63,7 @@ namespace badgerdb
             // Alloc a new page
             Page* headerPage;
             bufMgr -> allocPage(file, headerPageNum, headerPage);
-            IndexMetaInfo *metaPage = (IndexMetaInfo*)headerPage;
+            IndexMetaInfo* metaPage = (IndexMetaInfo*)headerPage;
             // Store data into header page
             strcpy(metaPage -> relationName, relationName.c_str());
             metaPage -> attrByteOffset = attrByteOffset;
@@ -120,11 +120,11 @@ namespace badgerdb
         }
     }
     /**
-      * BTreeIndex Destructor.
-      * End any initialized scan, flush index file, after unpinning any pinned pages, from the buffer manager
-      * and delete file instance thereby closing the index file.
-      * Destructor should not throw any exceptions. All exceptions should be caught in here itself.
-    **/
+     * BTreeIndex Destructor.
+     * End any initialized scan, flush index file, after unpinning any pinned pages, from the buffer manager
+     * and delete file instance thereby closing the index file.
+     * Destructor should not throw any exceptions. All exceptions should be caught in here itself.
+     */
     BTreeIndex::~BTreeIndex()
     {
         scanExecuting = false;
@@ -133,18 +133,18 @@ namespace badgerdb
         file = nullptr;
     }
     /**
-      * Insert a new entry using the pair <value,rid>.
-      * Start from root to recursively find out the leaf to insert the entry in.
-      * The insertion may cause splitting of leaf node.
-      * This splitting will require addition of new leaf page number entry into the parent non-leaf,
-      * which may in-turn get split.
-      * This may continue all the way upto the root causing the root to get split.
-      * If root gets split, metapage needs to be changed accordingly.
-      * Make sure to unpin pages as soon as you can.
-      *
-      * @param key Key to insert, pointer to integer/double/char string
-      * @param rid Record ID of a record whose entry is getting inserted into the index.
-    **/
+     * Insert a new entry using the pair <value,rid>.
+     * Start from root to recursively find out the leaf to insert the entry in.
+     * The insertion may cause splitting of leaf node.
+     * This splitting will require addition of new leaf page number entry into the parent non-leaf,
+     * which may in-turn get split.
+     * This may continue all the way upto the root causing the root to get split.
+     * If root gets split, metapage needs to be changed accordingly.
+     * Make sure to unpin pages as soon as you can.
+     *
+     * @param key Key to insert, pointer to integer/double/char string
+     * @param rid Record ID of a record whose entry is getting inserted into the index.
+     */
     const void BTreeIndex::insertEntry(const void *key, const RecordId rid)
     {
         RIDKeyPair<int> pair;
@@ -161,21 +161,21 @@ namespace badgerdb
         }
     }
     /**
-      * Begin a filtered scan of the index.  For instance, if the method is called
-      * using ("a",GT,"d",LTE) then we should seek all entries with a value
-      * greater than "a" and less than or equal to "d".
-      * If another scan is already executing, that needs to be ended here.
-      * Set up all the variables for scan. Start from root to find out the leaf page that contains the first RecordID
-      * that satisfies the scan parameters. Keep that page pinned in the buffer pool.
-      *
-      * @param lowVal	Low value of range, pointer to integer / double / char string
-      * @param lowOp		Low operator (GT/GTE)
-      * @param highVal	High value of range, pointer to integer / double / char string
-      * @param highOp	High operator (LT/LTE)
-      * @throws  BadOpcodesException If lowOp and highOp do not contain one of their their expected values
-      * @throws  BadScanrangeException If lowVal > highval
-      * @throws  NoSuchKeyFoundException If there is no key in the B+ tree that satisfies the scan criteria.
-    **/
+     * Begin a filtered scan of the index.  For instance, if the method is called
+     * using ("a",GT,"d",LTE) then we should seek all entries with a value
+     * greater than "a" and less than or equal to "d".
+     * If another scan is already executing, that needs to be ended here.
+     * Set up all the variables for scan. Start from root to find out the leaf page that contains the first RecordID
+     * that satisfies the scan parameters. Keep that page pinned in the buffer pool.
+     *
+     * @param lowVal	Low value of range, pointer to integer / double / char string
+     * @param lowOp		Low operator (GT/GTE)
+     * @param highVal	High value of range, pointer to integer / double / char string
+     * @param highOp	High operator (LT/LTE)
+     * @throws  BadOpcodesException If lowOp and highOp do not contain one of their their expected values
+     * @throws  BadScanrangeException If lowVal > highval
+     * @throws  NoSuchKeyFoundException If there is no key in the B+ tree that satisfies the scan criteria.
+     */
     const void BTreeIndex::startScan(const void* lowValParm,
                                      const Operator lowOpParm,
                                      const void* highValParm,
@@ -240,7 +240,7 @@ namespace badgerdb
      * @param outRid	RecordId of next record found that satisfies the scan criteria returned in this
 	 * @throws ScanNotInitializedException If no scan has been initialized.
 	 * @throws IndexScanCompletedException If no more records, satisfying the scan criteria, are left to be scanned.
-	**/
+	 */
     const void BTreeIndex::scanNext(RecordId& outRid)
     {
         // Scan is not initialized
@@ -282,7 +282,7 @@ namespace badgerdb
 	 * Terminate the current scan. Unpin any pinned pages. Reset scan specific variables.
      *
 	 * @throws ScanNotInitializedException If no scan has been initialized.
-	**/
+	 */
     const void BTreeIndex::endScan()
     {
         if (!scanExecuting)
@@ -296,13 +296,13 @@ namespace badgerdb
         nextEntry = -1;
     }
     /**
-      * Recursively insert entry into file
-      *
-      * @param pair inserting entry
-      * @param currNum current page number
-      * @param ifLeaf if a node is leaf
-      * @return PageKeyPair<int>*
-    **/
+     * Recursively insert entry into file
+     *
+     * @param pair inserting entry
+     * @param currNum current page number
+     * @param ifLeaf if a node is leaf
+     * @return PageKeyPair<int>*
+     */
     PageKeyPair<int>* BTreeIndex::insert(RIDKeyPair<int> pair, PageId currNum, int isLeaf)
     {
         Page* currPage;
@@ -360,7 +360,7 @@ namespace badgerdb
                 // if current node has no space
                 else
                 {
-                    PageKeyPair<int>* moveUpMidPair = splitNonleaf(currNum, nonLeaf, *pagePairTmp);
+                    PageKeyPair<int>* moveUpMidPair = splitNonLeaf(currNum, nonLeaf, *pagePairTmp);
                     bufMgr -> unPinPage(file, currNum, true);
                     return moveUpMidPair;
                 }
@@ -393,12 +393,12 @@ namespace badgerdb
         }
     }
     /**
-      * Insert into non-leaf node
-      *
-      * @param pari1 the left pair
-      * @param pair2 the right pair
-      * @param nonLeafNode current node working on
-    **/
+     * Insert into non-leaf node
+     *
+     * @param pair1 the left pair
+     * @param pair2 the right pair
+     * @param nonLeafNode current node working on
+     */
     const void BTreeIndex::insertNonLeaf(PageKeyPair<int> pair1, PageKeyPair<int> pair2, NonLeafNodeInt *nonLeafNode)
     {
         // insert into an empty non-leaf node
@@ -436,11 +436,11 @@ namespace badgerdb
         }
     }
     /**
-      * Insert into leaf node
-      *
-      * @param pair the RidKeyPair
-      * @param leafNode current node working on
-    **/
+     * Insert into leaf node
+     *
+     * @param pair the RidKeyPair
+     * @param leafNode current node working on
+     */
     const void BTreeIndex::insertLeaf(RIDKeyPair<int> pair, LeafNodeInt *leafNode)
     {
         RIDKeyPair<int> pairContainer = pair;
@@ -469,13 +469,13 @@ namespace badgerdb
         }
     }
     /**
-      * Split leaf node
-      *
-      * @param leafNode current leaf node
-      * @param currNum current page number
-      * @param pair the RIDKeyPair<int>
-      * @return PageKeyPair<int>*
-    **/
+     * Split leaf node
+     *
+     * @param leafNode current leaf node
+     * @param currNum current page number
+     * @param pair the RIDKeyPair<int>
+     * @return PageKeyPair<int>*
+     */
     PageKeyPair<int>* BTreeIndex::splitLeaf(LeafNodeInt *leafNode, PageId currNum, RIDKeyPair<int> pair)
     {
         // create a new leaf
@@ -519,14 +519,14 @@ namespace badgerdb
         return moveUpPair(left_pair, right_pair, 1, newSiblingNum, currNum);
     }
     /**
-      * Split non-leaf node
-      *
-      * @param currNum current page number
-      * @param nonLeafNode current node working on
-      * @param pair the PageKeyPair
-      * @return PageKeyPair<int>*
-     **/
-    PageKeyPair<int>* BTreeIndex::splitNonleaf(PageId currNum, NonLeafNodeInt *nonLeafNode, PageKeyPair<int> pair)
+     * Split non-leaf node
+     *
+     * @param currNum current page number
+     * @param nonLeafNode current node working on
+     * @param pair the PageKeyPair
+     * @return PageKeyPair<int>*
+     */
+    PageKeyPair<int>* BTreeIndex::splitNonLeaf(PageId currNum, NonLeafNodeInt *nonLeafNode, PageKeyPair<int> pair)
     {
         // create a new non-leaf node
         Page* newSibling;
@@ -628,12 +628,12 @@ namespace badgerdb
         return findKey;
     }
     /**
-      * check if node is leaf
-      *
-      * @param nonLeafNode
-      * @param index
-      * @return if need recursive call
-    **/
+     * check if node is leaf
+     *
+     * @param nonLeafNode
+     * @param index
+     * @return if need recursive call
+     */
     const bool BTreeIndex::checkLeaf(NonLeafNodeInt *nonLeafNode, int index)
     {
         Page* page;
@@ -644,12 +644,12 @@ namespace badgerdb
         return findKey;
     }
     /**
-      * find leaf node
-      *
-      * @param nonLeafNode
-      * @param nextNodeIsLeaf
-      * @return bool if find the leaf node
-    **/
+     * find leaf node
+     *
+     * @param nonLeafNode
+     * @param nextNodeIsLeaf
+     * @return bool if find the leaf node
+     */
     const bool BTreeIndex::findLeafNode(NonLeafNodeInt *nonLeafNode, int nextNodeIsLeaf)
     {
         // the next node is a nonLeafNode
@@ -741,7 +741,7 @@ namespace badgerdb
     }
     /**
      * Searching key in the given leaf node
-     * 
+     *
      * @param LeafNode
      * @param PageNum
      * @return
