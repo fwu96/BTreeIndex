@@ -152,12 +152,12 @@ int main(int argc, char **argv)
 
 	File::remove(relationName);
 
-	//test1();
-	//std::cout << "Finish Test One" << std::endl;
-	//test2();
-	//std::cout << "Finish Test Two" << std::endl;
-	//test3();
-	//std::cout << "Finish Test Three" << std::endl;
+	test1();
+	std::cout << "Finish Test One" << std::endl;
+	test2();
+	std::cout << "Finish Test Two" << std::endl;
+	test3();
+	std::cout << "Finish Test Three" << std::endl;
 	 //test4();
 	 //std::cout << "Finish Test Four" << std::endl;
 	 //test5();
@@ -168,8 +168,8 @@ int main(int argc, char **argv)
 	 //std::cout << "Finish Test Seven" << std::endl;
 	 //test8();
 	 //std::cout << "Finish Test Eight" << std::endl;
-	//errorTests();
-	//std::cout << "Finish Error Test" << std::endl;
+	errorTests();
+	std::cout << "Finish Error Test" << std::endl;
 
   return 1;
 }
@@ -293,26 +293,26 @@ void TestRelationSize10000()
     std::cout << "----- TestRelationSize10000 -----" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
-//    checkPassFail(intScan(&index,25,GT,40,LT), 14)
-//    checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
-//    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
-//    checkPassFail(intScan(&index,996,GT,1001,LT), 4)
-//    checkPassFail(intScan(&index,0,GT,1,LT), 0)
-//    checkPassFail(intScan(&index,300,GT,400,LT), 99)
-//    checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
+    checkPassFail(intScan(&index,25,GT,40,LT), 14)
+    checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
+    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
+    checkPassFail(intScan(&index,996,GT,1001,LT), 4)
+    checkPassFail(intScan(&index,0,GT,1,LT), 0)
+    checkPassFail(intScan(&index,300,GT,400,LT), 99)
+    checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
 }
 void TestEmptyTree()
 {
     std::cout << "-------- TestEmptyTree --------" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
-//    checkPassFail(intScan(&index,25,GT,40,LT), 0)
-//    checkPassFail(intScan(&index,20,GTE,35,LTE), 0)
-//    checkPassFail(intScan(&index,-3,GT,3,LT), 0)
-//    checkPassFail(intScan(&index,996,GT,1001,LT), 0)
-//    checkPassFail(intScan(&index,0,GT,1,LT), 0)
-//    checkPassFail(intScan(&index,300,GT,400,LT), 0)
-//    checkPassFail(intScan(&index,3000,GTE,4000,LT), 0)
+    checkPassFail(intScan(&index,25,GT,40,LT), 0)
+    checkPassFail(intScan(&index,20,GTE,35,LTE), 0)
+    checkPassFail(intScan(&index,-3,GT,3,LT), 0)
+    checkPassFail(intScan(&index,996,GT,1001,LT), 0)
+    checkPassFail(intScan(&index,0,GT,1,LT), 0)
+    checkPassFail(intScan(&index,300,GT,400,LT), 0)
+    checkPassFail(intScan(&index,3000,GTE,4000,LT), 0)
 }
 void TestWithoutSplit()
 {
@@ -320,13 +320,13 @@ void TestWithoutSplit()
     std::cout << "---------- TestWithoutSplit ---------" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
-//    checkPassFail(intScan(&index,25,GT,40,LT), 14)
-//    checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
-//    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
-//    checkPassFail(intScan(&index,200,GTE,250,LTE), 51)
-//    checkPassFail(intScan(&index,0,GT,1,LT), 0)
-//    checkPassFail(intScan(&index,300,GT,400,LT), 0)
-//    checkPassFail(intScan(&index,3000,GTE,4000,LT), 0)
+    checkPassFail(intScan(&index,25,GT,40,LT), 14)
+    checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
+    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
+    checkPassFail(intScan(&index,200,GTE,250,LTE), 51)
+    checkPassFail(intScan(&index,0,GT,1,LT), 0)
+    checkPassFail(intScan(&index,300,GT,400,LT), 0)
+    checkPassFail(intScan(&index,3000,GTE,4000,LT), 0)
 }
 void TestHugeNum()
 {
@@ -334,13 +334,13 @@ void TestHugeNum()
     std::cout << "---------- TestHugeNum ---------- " << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
-//    checkPassFail(intScan(&index,25,GT,40,LT), 14)
-//    checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
-//    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
-//    checkPassFail(intScan(&index,996,GT,1001,LT), 4)
-//    checkPassFail(intScan(&index,0,GT,1,LT), 0)
-//    checkPassFail(intScan(&index,300,GT,400,LT), 99)
-//    checkPassFail(intScan(&index,0,GTE, 10000000,LT),10000000)
+    checkPassFail(intScan(&index,25,GT,40,LT), 14)
+    checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
+    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
+    checkPassFail(intScan(&index,996,GT,1001,LT), 4)
+    checkPassFail(intScan(&index,0,GT,1,LT), 0)
+    checkPassFail(intScan(&index,300,GT,400,LT), 99)
+    checkPassFail(intScan(&index,0,GTE, 10000000,LT),10000000)
 }
 
 void testRange()
@@ -350,13 +350,13 @@ void testRange()
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
     //
-//    checkPassFail(intScan(&index,25,GT,40,LT), 14)
-//    checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
-//    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
-//    checkPassFail(intScan(&index,-300,GTE,300,LTE), 601)
-//    checkPassFail(intScan(&index,0,GT,1,LT), 0)
-//    checkPassFail(intScan(&index,300,GT,400,LT), 99)
-//    checkPassFail(intScan(&index,-1,GTE,0,LT), 1)
+    checkPassFail(intScan(&index,25,GT,40,LT), 14)
+    checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
+    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
+    checkPassFail(intScan(&index,-300,GTE,300,LTE), 601)
+    checkPassFail(intScan(&index,0,GT,1,LT), 0)
+    checkPassFail(intScan(&index,300,GT,400,LT), 99)
+    checkPassFail(intScan(&index,-1,GTE,0,LT), 1)
 }
 // -----------------------------------------------------------------------------
 // createRelationWithRange
@@ -951,6 +951,7 @@ void errorTests()
 
 void deleteRelation()
 {
+    std::cout << "the file will be deleted is " << file1 -> filename() << std::endl;
 	if(file1)
 	{
 		bufMgr->flushFile(file1);
@@ -959,6 +960,7 @@ void deleteRelation()
 	}
 	try
 	{
+	    std::cout << "try to remove file " << relationName << " in deleteRelation"<< std::endl;
 		File::remove(relationName);
 	}
 	catch(FileNotFoundException e)
