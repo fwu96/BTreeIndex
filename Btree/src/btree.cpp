@@ -39,21 +39,22 @@ namespace badgerdb
                            const int attrByteOffset,
                            const Datatype attrType)
     {
-        // construct an index file name
+        // Generating an index file name
         std::ostringstream idxStr;
         idxStr << relationName << '.' << attrByteOffset;
         std::string indexName = idxStr.str();
-        std::cout << indexName << std::endl;
+        // Initializing
         outIndexName = indexName;
         attributeType = attrType;
         scanExecuting = false;
+        bufMgr = bufMgrIn;
         // File does not exist
         try
         {
             // create an index file
             file = new BlobFile(indexName,true);
             // initialize related private fields
-            bufMgr = bufMgrIn;
+            //bufMgr = bufMgrIn;
             headerPageNum = 1;
             rootPageNum = 2;
             this -> attrByteOffset = attrByteOffset;
@@ -110,7 +111,7 @@ namespace badgerdb
             file = new BlobFile(indexName,false);
             //std::cout << "=====================================catch file exist exception=====================================" << std::endl;
             // initialize related private fields
-            bufMgr = bufMgrIn;
+            //bufMgr = bufMgrIn;
             headerPageNum = 1;
             this -> attrByteOffset = attrByteOffset;
             leafOccupancy = 0;
