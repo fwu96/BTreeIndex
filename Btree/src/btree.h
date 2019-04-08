@@ -291,29 +291,111 @@ class BTreeIndex {
    */
 	Operator	highOp;
 
-
-  PageKeyPair<int>* insert(RIDKeyPair<int> pair, PageId currPageNum, int isLeaf);
-
-  const void insertNonLeaf(PageKeyPair<int> pair1, PageKeyPair<int> pair2, NonLeafNodeInt *nonLeafNode);
-
-  const void insertLeaf(RIDKeyPair<int> pair, LeafNodeInt *leafNode);
-
+    /**
+     * The recursion insert method used to recursively find the place
+     * to split and insert a key pair
+     * @param pair         a key pair to insert into the index file
+     * @param currPageNum  the current page number which is the current node we are traversing
+     * @param isLeaf       a flag to help deciding whether the next level is leaf or not
+     * @return PageKeyPair<int>* return a page key pair
+     *                           if it is null, no middle key is moved up
+     *                           otherwise, one middle key is moved up
+     */
+    PageKeyPair<int>* insert(RIDKeyPair<int> pair, PageId currPageNum, int isLeaf);
+    /**
+     * This method is to insert two pairs into one non leaf node
+     * @param pair1       a pair of key and page number
+     * @param pair2       a pair of key and page number
+     * @param nonLeafNode a pointer to a non leaf node struct
+     */
+    const void insertNonLeaf(PageKeyPair<int> pair1, PageKeyPair<int> pair2, NonLeafNodeInt *nonLeafNode);
+    /**
+     * This method is to insert one pair into one leaf node
+     * @param pair     a pair of key and rid number
+     * @param leafNode a pointer to a leaf node struct
+     */
+    const void insertLeaf(RIDKeyPair<int> pair, LeafNodeInt *leafNode);
+    /**
+     * This method is to split a leaf node
+     * If the splitted node is a root, create a new root
+     * @param leafNode the leaf Node we want to split
+     * @param currNum  the page number of the leaf node we want to split
+     * @param pair     the pair of key and rid number we want to insert
+     * @return PageKeyPair<int>* return a page key pair
+     *                           if it is null, no middle key is moved up
+     *                           otherwise, one middle key is moved up
+     */
 	PageKeyPair<int>* splitLeaf(LeafNodeInt *leafNode, PageId currNum, RIDKeyPair<int> pair);
-
-  PageKeyPair<int>* splitNonleaf(PageId currNum, NonLeafNodeInt *nonLeafNode, PageKeyPair<int> pair);
-
-    const bool findLeafNode(NonLeafNodeInt *nonLeafNode, int nextNodeIsLeaf);
+    /**
+     * This method is to split a non leaf node
+     * If the splitted node is a root, create a new root
+     * @param leafNode the non leaf Node we want to split
+     * @param currNum  the page number of the non leaf node we want to split
+     * @param pair     the pair of key and page number we want to insert
+     * @return PageKeyPair<int>* return a page key pair
+     *                           if it is null, no middle key is moved up
+     *                           otherwise, one middle key is moved up
+     */
+    PageKeyPair<int>* splitNonLeaf(PageId currNum, NonLeafNodeInt *nonLeafNode, PageKeyPair<int> pair);
+    /**
+     * This method is to handle the case of moving up a pair to the upper level
+     * If the current node is root, a new root needs to be created and initialized
+     * @param leftPair       a pointer to a pair of page number and key which might be moved up
+     * @param rightPair      a pointer to a pair of page number and key which might be moved up
+     * @param level          the level of current node to be splitted
+     * @param newSiblingNum  the page number of the right sibling of the current node to be splitted
+     * @param currNum        the page number of the current node to be splitted
+     * @return PageKeyPair<int>* a pointer to a pair of page number and key
+     *                           returns null if a new root is created
+     *                           Otherwise returns a pair of page and key which needs to be moved up
+     */
     PageKeyPair<int>* moveUpPair(PageKeyPair<int>* leftPair, PageKeyPair<int>* rightPair, int level, PageId newSiblingNum, PageId currNum);
-    const bool check_node(NonLeafNodeInt* nonLeafNode, int index, bool isRecursion);
+    /**
+     * This method is used to recursively find if lowIntVal is within the range of a leaf node
+     * @param nonLeafNode    the pointer to the non leaf node struct
+     * @param nextNodeIsLeaf the level used to decide if next level is leaf or not
+     * @return bool return true if lowIntVal is within the range
+     *              Otherwise, return false
+     */
+    const bool findLeafNode(NonLeafNodeInt *nonLeafNode, int nextNodeIsLeaf);
+    /**
+     * This method is used to check which leaf need to be searched for lowIntVal
+     * @param nonLeafNode a pointer to a non leaf node struct
+     * @param index       an index to be accessed in the non leaf node struct
+     * @return bool returns true if the lowIntVal is within the range
+     *              otherwise returns false
+     */
     const bool checkLeaf(NonLeafNodeInt *nonLeafNode, int index);
+    /**
+     * This method is to check which non leaf need to be access for search
+     * @param nonLeafNode a pointer to a non leaf node struct
+     * @param index       an index to be accessed in the non leaf node struct
+     * @return bool returns true if the lowIntVal is within the range
+     *              otherwise returns false
+     */
     const bool checkNonLeaf(NonLeafNodeInt *nonLeafNode, int index);
+    /**
+     * This method is to check whether a key is out of needed range
+     * is within the range
+     * @param key a key value we are searching for
+     * @return bool return true if the key is within the range
+     *              otherwise returns false
+     */
+    const bool checkValid(int key);
+    /**
+     * This method is to search one key in one leaf node
+     * @param LeafNode a pointer to a leaf node struct
+     * @param pageNum  the page number of the above leaf node
+     * @ return bool return true if the key is found
+     *               otherwise returns false
+     */
+    const bool searchKeyInLeaf(LeafNodeInt *LeafNode, int PageNum);
+    /**
+     * This method is used to update the content of the new root
+     * @param newRootNum the page number of the newly created root
+     */
+    const void changeRootNum(PageId newRootNum);
 
-  void printOutAllTree();
-
-  void printThisLeft(PageId tmpNo);
-  const bool checkValid(int key);
-  const bool searchKeyInLeaf(LeafNodeInt *LeafNode, int PageNum);
-  const void changeRootNum(PageId newRootNum);
  public:
 
   /**
