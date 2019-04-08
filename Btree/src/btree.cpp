@@ -39,40 +39,39 @@ namespace badgerdb
                            const int attrByteOffset,
                            const Datatype attrType)
     {
-        // construct an index file name
+        // Generating an index file name
         std::ostringstream idxStr;
         idxStr << relationName << '.' << attrByteOffset;
         std::string indexName = idxStr.str();
-        std::cout << indexName << std::endl;
+        // Initializing
         outIndexName = indexName;
         attributeType = attrType;
         scanExecuting = false;
+        bufMgr = bufMgrIn;
+        // File does not exist
         try
         {
             // create an index file
             file = new BlobFile(indexName,true);
-            //std::cout << "I created BlobFile object" << std::endl;
             // initialize related private fields
-            bufMgr = bufMgrIn;
+            //bufMgr = bufMgrIn;
             headerPageNum = 1;
             rootPageNum = 2;
             this -> attrByteOffset = attrByteOffset;
             leafOccupancy = 0;
             nodeOccupancy = 0;
+            // Alloc a new page
             Page* headerPage;
             bufMgr -> allocPage(file, headerPageNum, headerPage);
-            //std::cout << "headerPageNum = " << headerPageNum << std::endl;
             IndexMetaInfo *metaPage = (IndexMetaInfo*)headerPage;
+            // Store data into header page
             strcpy(metaPage -> relationName, relationName.c_str());
-            //std::cout << "relation name = "<< metaPage -> relationName << std::endl;
             metaPage -> attrByteOffset = attrByteOffset;
-            //std::cout << "attrByteOffset = " << metaPage -> attrByteOffset << std::endl;
             metaPage -> attrType = attrType;
-            //std::cout << "attrType = " << metaPage -> attrType << std::endl;
             metaPage -> rootPageNo = 2;
             bufMgr -> unPinPage(file, headerPageNum, true);
             FileScan fc(relationName, bufMgr);
-            //std::cout << "I created FileScan object with relation name " << relationName << std::endl;
+            // Create the root page
             try
             {
                 RecordId scanRid;
@@ -82,11 +81,8 @@ namespace badgerdb
                 std::string recordStr = fc.getRecord();
                 const char *record = recordStr.c_str();
                 int key = *((int *)(record + offsetof (RECORD, i)));
-                //std::cout << "the key to insert in root is " << key << std::endl;
-                //std::cout << "the rid to insert in root is " << scanRid.page_number << " " << scanRid.slot_number << std::endl;
                 Page *rootPage;
                 bufMgr -> allocPage(file,rootPageNum,rootPage);
-                //std::cout << "the root page number is " << rootPageNum << std::endl;
                 LeafNodeInt* rootNode = (LeafNodeInt*)rootPage;
                 rootNode -> keyArray[0] = key;
                 rootNode -> ridArray[0] = scanRid;
@@ -101,153 +97,38 @@ namespace badgerdb
                     insertEntry(&key,scanRid);
                 }
             }
+            // Hit the end
             catch (EndOfFileException e)
             {
-                std::cout << "===========================put all records===========================" << std::endl;
+                //std::cout << "===========================put all records===========================" << std::endl;
                 bufMgr -> flushFile(file);
             }
-            // test, print out record in one leaf
-            //Page* testPage;
-            //bufMgr -> readPage(file, rootPageNum, testPage);
-            //LeafNodeInt* testNode = (LeafNodeInt*)testPage;
-            //for (int i = 0; i < INTARRAYLEAFSIZE; i++)
-            //{
-            //    if(testNode -> ridArray[i].slot_number == 0)
-            //    {
-            //        break;
-            //    }
-            //    std::cout << testNode -> keyArray[i] << " " << testNode -> ridArray[i].page_number << " " << testNode -> ridArray[i].slot_number << std::endl;
-            //}
-
-            //bufMgr -> unPinPage(file, rootPageNum, false);
-            //std::cout << "unpinned" << std::endl;
-            printOutAllTree();
         }
+        // File exists
         catch (FileExistsException e)
         {
             // open an existing file
             file = new BlobFile(indexName,false);
-            std::cout << "=====================================catch file exist exception=====================================" << std::endl;
+            //std::cout << "=====================================catch file exist exception=====================================" << std::endl;
             // initialize related private fields
-            bufMgr = bufMgrIn;
+            //bufMgr = bufMgrIn;
             headerPageNum = 1;
             this -> attrByteOffset = attrByteOffset;
             leafOccupancy = 0;
             nodeOccupancy = 0;
+            // Read existing header page
             Page* headerPage;
-            //std::cout << "file exist, headernum = " << headerPageNum << std::endl;
             bufMgr -> readPage(file, headerPageNum, headerPage);
             IndexMetaInfo* metaPage = (IndexMetaInfo*)headerPage;
-            //std::cout << "attrtype meta " << metaPage->attrType << std::endl;
-            //std::cout << "atroffest meta " << metaPage->attrByteOffset << std::endl;
-            //std::cout << "ralationName meta " << metaPage->relationName << std::endl;
             rootPageNum = metaPage -> rootPageNo;
-            if (relationName != metaPage -> relationName || attrByteOffset != metaPage -> attrByteOffset || attrType != metaPage -> attrType)
+            // The the data of metaPage does not match the initial one
+            if (relationName != metaPage -> relationName ||
+                         attrByteOffset != metaPage -> attrByteOffset || attrType != metaPage -> attrType)
             {
                 throw BadIndexInfoException(outIndexName);
             }
             bufMgr -> unPinPage(file, headerPageNum, true);
-            //std::cout << "the rootPageNum now is " << rootPageNum << std::endl;
-            printOutAllTree();
         }
-        catch(const std::exception& ex)
-        {
-            // speciffic handling for all exceptions extending std::exception, except
-            std::cerr << "Error occurred: " << ex.what() << std::endl;
-        }
-    }
-    void BTreeIndex::printOutAllTree()
-    {
-        Page* tmp;
-        bufMgr -> readPage(file, rootPageNum, tmp);
-        PageId tmpNum = rootPageNum;
-
-        // if root page is leaf
-        if(rootPageNum == 2)
-        {
-            bufMgr -> unPinPage(file, rootPageNum, false);
-            printThisLeft(rootPageNum);
-        }
-            // if root page is not leaf
-        else
-        {
-            while(1)
-            {
-                PageId nextPage;
-                NonLeafNodeInt* tmpNoneLeaf = (NonLeafNodeInt*)tmp;
-                //if children are leaves, print out each child page
-                if(tmpNoneLeaf -> level == 1)
-                {
-                    std::cout << "I am in lalalalalalalllllllllllllllllllllllllllllllllllllllllllllll" << std::endl;
-                    for(int i = 0; i < INTARRAYNONLEAFSIZE + 1; i++)
-                    {
-                        if(tmpNoneLeaf -> pageNoArray[i] == 0)
-                        {
-                            break;
-                        }
-                        printThisLeft(tmpNoneLeaf -> pageNoArray[i]);
-                        nextPage = tmpNoneLeaf -> pageNoArray[i];
-                    }
-                    bufMgr -> unPinPage(file, tmpNum, false);
-                    Page* lalala;
-                    bufMgr -> readPage(file, nextPage, lalala);
-                    LeafNodeInt* lalaLeaf = (LeafNodeInt*)lalala;
-                    std::cout << "before the while" << lalaLeaf -> rightSibPageNo << std::endl;
-                    bufMgr -> unPinPage(file, nextPage, false);
-                    PageId rightNum = lalaLeaf -> rightSibPageNo;
-                    while(rightNum > 0)
-                    {
-                        std::cout << "lalaLeaf > 0" << std::endl;
-                        std::cout << "rightNum " << rightNum << std::endl;
-                        printThisLeft(rightNum);
-                        bufMgr -> readPage(file, rightNum, lalala);
-                        lalaLeaf = (LeafNodeInt*)lalala;
-                        std::cout << lalaLeaf -> rightSibPageNo << std::endl;
-                        bufMgr -> unPinPage(file, rightNum, false);
-                        rightNum = lalaLeaf -> rightSibPageNo;
-                        //bufMgr -> unPinPage(file, rightNum, false);
-                    }
-
-                    break;
-                }
-                    // if children are non leaves, check the leftMostChild
-                else if(tmpNoneLeaf -> level == 0)
-                {
-                    PageId leftMost = tmpNoneLeaf -> pageNoArray[0];
-                    if(leftMost == 0)
-                    {
-                        std::cout << "THIS SHOULD NEVER PRINT:::::::::::::::::::::::There is something wrong" << std::endl;
-                    }
-                    else
-                    {
-                        bufMgr -> unPinPage(file, tmpNum, false);
-                        tmpNum = leftMost;
-                        bufMgr -> readPage(file, tmpNum, tmp);
-                    }
-                }
-                else
-                {
-                    std::cout << "THIS SHOULD NEVER PRINT:::::::::::::::::the level of this node is " << tmpNoneLeaf -> level << std::endl;
-                    break;
-                }
-            }
-        }
-    }
-    void BTreeIndex::printThisLeft(PageId tmpNo)
-    {
-        std::cout << "ready to print" << std::endl;
-        Page* tmpPage;
-        bufMgr -> readPage(file, tmpNo, tmpPage);
-        LeafNodeInt* leafNode = (LeafNodeInt*)tmpPage;
-        for(int i = 0; i < INTARRAYLEAFSIZE; i++)
-        {
-            if(leafNode -> ridArray[i].slot_number != 0)
-            {
-                std::cout << leafNode -> keyArray[i] << " ";
-            }
-        }
-        std::cout << std::endl;
-        bufMgr -> unPinPage(file, tmpNo, false);
     }
 // -----------------------------------------------------------------------------
 // BTreeIndex::~BTreeIndex -- destructor
@@ -255,13 +136,9 @@ namespace badgerdb
     BTreeIndex::~BTreeIndex()
     {
         scanExecuting = false;
-        std::cout << "in the destructor" << std::endl;
         bufMgr -> flushFile(BTreeIndex::file);
-        std::cout << "flushed" << std::endl;
         delete file;
-        std::cout << "deleted" << std::endl;
         file = nullptr;
-        std::cout << "nulled" << std::endl;
     }
 // -----------------------------------------------------------------------------
 // BTreeIndex::insertEntry
@@ -298,7 +175,7 @@ namespace badgerdb
     {
         Page* currPage;
         bufMgr -> readPage(file, currNum, currPage);
-        // if current node is not leaf
+        // Current node is not leaf
         if (isLeaf == 0)
         {
             NonLeafNodeInt* nonleaf = (NonLeafNodeInt*) currPage;
@@ -783,6 +660,7 @@ namespace badgerdb
 // -----------------------------------------------------------------------------
     const void BTreeIndex::scanNext(RecordId& outRid)
     {
+        // Scan is not initialized
         if (!scanExecuting)
         {
             std::cout << "scan not initialized" << std::endl;
@@ -790,12 +668,14 @@ namespace badgerdb
             throw ScanNotInitializedException();
         }
         LeafNodeInt* currNode = (LeafNodeInt*) currentPageData;
+        // If the pageNo of next RID == 0 || hit the end of the array
         if (currNode -> ridArray[nextEntry].page_number == 0 || nextEntry == INTARRAYLEAFSIZE)
         {
             bufMgr -> unPinPage(file, currentPageNum, false);
+            // If there is no right sibling page
             if (currNode -> rightSibPageNo == 0)
             {
-                bufMgr -> unPinPage(file, currentPageNum, false);
+                //bufMgr -> unPinPage(file, currentPageNum, false);
                 throw IndexScanCompletedException();
             }
             currentPageNum = currNode -> rightSibPageNo;
@@ -804,11 +684,13 @@ namespace badgerdb
             nextEntry = 0;
         }
         int key = currNode -> keyArray[nextEntry];
+        // Key is valid (in the desired range)
         if (checkValid(key))
         {
             outRid = currNode -> ridArray[nextEntry];
             nextEntry++;
         }
+        // Key is not valid
         else
         {
             bufMgr -> unPinPage(file, currentPageNum, false);
