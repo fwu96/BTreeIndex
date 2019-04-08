@@ -302,13 +302,13 @@ class BTreeIndex {
 
   PageKeyPair<int>* split_nonleaf(PageId curpagenum, NonLeafNodeInt* nonLeafNode, PageKeyPair<int> pair);
 
-    const void find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeisleaf);
+    const bool find_leafnode(NonLeafNodeInt* nonleafnode, int nextnodeisleaf, bool* findKey);
 
   void printOutAllTree();
 
   void printThisLeft(PageId tmpNo);
   const bool checkValid(int key);
-  const void search_key_in_leaf(LeafNodeInt* LeafNode , int curnum);
+  const bool search_key_in_leaf(LeafNodeInt* LeafNode , int curnum);
   const void changeRootNum(PageId newRootNum);
  public:
 
