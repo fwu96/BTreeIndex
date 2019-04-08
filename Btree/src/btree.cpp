@@ -18,11 +18,6 @@
 #include "exceptions/file_exists_exception.h"
 
 //#define DEBUG
-typedef struct tuple {
-    int i;
-    double d;
-    char s[64];
-} RECORD;
 
 namespace badgerdb
 {
@@ -84,11 +79,10 @@ namespace badgerdb
                 fc.scanNext(scanRid);
                 std::string recordStr = fc.getRecord();
                 const char *record = recordStr.c_str();
-                int key = *((int *)(record + offsetof (RECORD, i)));
                 Page *rootPage;
                 bufMgr -> allocPage(file,rootPageNum,rootPage);
                 LeafNodeInt* rootNode = (LeafNodeInt*)rootPage;
-                rootNode -> keyArray[0] = key;
+                rootNode -> keyArray[0] = *((int*)record + attrByteOffset);
                 rootNode -> ridArray[0] = scanRid;
                 bufMgr -> unPinPage(file, rootPageNum, true);
                 // Get all the records from the relation
@@ -97,8 +91,7 @@ namespace badgerdb
                     fc.scanNext(scanRid);
                     std::string recordStr = fc.getRecord();
                     const char *record = recordStr.c_str();
-                    int key = *((int *)(record + offsetof (RECORD, i)));
-                    insertEntry(&key,scanRid);
+                    insertEntry(record + attrByteOffset,scanRid);
                 }
             }
             // Hit the end
@@ -164,6 +157,140 @@ namespace badgerdb
         {
             insert(pair, rootPageNum, 0);
         }
+    }
+    /**
+      * Begin a filtered scan of the index.  For instance, if the method is called
+      * using ("a",GT,"d",LTE) then we should seek all entries with a value
+      * greater than "a" and less than or equal to "d".
+      * If another scan is already executing, that needs to be ended here.
+      * Set up all the variables for scan. Start from root to find out the leaf page that contains the first RecordID
+      * that satisfies the scan parameters. Keep that page pinned in the buffer pool.
+      * @param lowVal	Low value of range, pointer to integer / double / char string
+      * @param lowOp		Low operator (GT/GTE)
+      * @param highVal	High value of range, pointer to integer / double / char string
+      * @param highOp	High operator (LT/LTE)
+      * @throws  BadOpcodesException If lowOp and highOp do not contain one of their their expected values
+      * @throws  BadScanrangeException If lowVal > highval
+      * @throws  NoSuchKeyFoundException If there is no key in the B+ tree that satisfies the scan criteria.
+    **/
+    const void BTreeIndex::startScan(const void* lowValParm,
+                                     const Operator lowOpParm,
+                                     const void* highValParm,
+                                     const Operator highOpParm)
+    {
+        // Initializing
+        lowValInt = *((int*)lowValParm);
+        highValInt = *((int*)highValParm);
+        // BadOpcodesException
+        if (!((lowOpParm == GT || lowOpParm == GTE) && (highOpParm == LT || highOpParm == LTE)))
+        {
+            throw BadOpcodesException();
+        }
+        // BadScanrangeException
+        if (lowValInt > highValInt)
+        {
+            throw BadScanrangeException();
+        }
+        // if another scan is on going, end that scan
+        if (scanExecuting)
+        {
+            endScan();
+        }
+        // initialize for this scan
+        scanExecuting = true;
+        // update the operator
+        lowOp = lowOpParm;
+        highOp = highOpParm;
+        // recursively find the exact place to start
+        // start from the root
+        Page* tmp;
+        bufMgr -> readPage(file, rootPageNum, tmp);
+        bool findKey = false;
+        // if root is leaf, recursively through all record of root is enough
+        if (rootPageNum == 2)
+        {
+            LeafNodeInt* rootLeaf = (LeafNodeInt*)tmp;
+            findKey = search_key_in_leaf(rootLeaf , rootPageNum);
+        }
+            // if root is not leaf, recursing through all children of root
+        else
+        {
+            NonLeafNodeInt* root = (NonLeafNodeInt*) tmp;
+            findKey = find_leafnode(root, root -> level);
+        }
+        bufMgr -> unPinPage(file, rootPageNum, false);
+        // does not find key
+        if (!findKey)
+        {
+            endScan();
+            throw NoSuchKeyFoundException();
+        }
+        bufMgr -> readPage(file, currentPageNum, tmp);
+        currentPageData = tmp;
+    }
+    /**
+	 * Fetch the record id of the next index entry that matches the scan.
+	 * Return the next record from current page being scanned. If current page has been scanned to its entirety,
+     * move on to the right sibling of current page, if any exists, to start scanning that page.
+     * Make sure to unpin any pages that are no longer required.
+     *
+     * @param outRid	RecordId of next record found that satisfies the scan criteria returned in this
+	 * @throws ScanNotInitializedException If no scan has been initialized.
+	 * @throws IndexScanCompletedException If no more records, satisfying the scan criteria, are left to be scanned.
+	**/
+    const void BTreeIndex::scanNext(RecordId& outRid)
+    {
+        // Scan is not initialized
+        if (!scanExecuting)
+        {
+            std::cout << "scan not initialized" << std::endl;
+            throw ScanNotInitializedException();
+        }
+        LeafNodeInt* currNode = (LeafNodeInt*) currentPageData;
+        // If the pageNo of next RID == 0 || hit the end of the array
+        if (currNode -> ridArray[nextEntry].page_number == 0 || nextEntry == INTARRAYLEAFSIZE)
+        {
+            bufMgr -> unPinPage(file, currentPageNum, false);
+            // If there is no right sibling page
+            if (currNode -> rightSibPageNo == 0)
+            {
+                throw IndexScanCompletedException();
+            }
+            // There is valid sibling page, set data
+            currentPageNum = currNode -> rightSibPageNo;
+            bufMgr -> readPage(file, currentPageNum, currentPageData);
+            currNode = (LeafNodeInt*) currentPageData;
+            nextEntry = 0;
+        }
+        int key = currNode -> keyArray[nextEntry];
+        // Key is valid (in the desired range)
+        if (checkValid(key))
+        {
+            outRid = currNode -> ridArray[nextEntry];
+            nextEntry++;
+        }
+            // Key is not valid
+        else
+        {
+            bufMgr -> unPinPage(file, currentPageNum, false);
+            throw IndexScanCompletedException();
+        }
+    }
+    /**
+	 * Terminate the current scan. Unpin any pinned pages. Reset scan specific variables.
+	 * @throws ScanNotInitializedException If no scan has been initialized.
+	**/
+    const void BTreeIndex::endScan()
+    {
+        if (!scanExecuting)
+        {
+            throw ScanNotInitializedException();
+        }
+        // reset vars
+        scanExecuting = false;
+        currentPageData = nullptr;
+        currentPageNum = -1;
+        nextEntry = -1;
     }
     /**
       * Recursively insert entry into file
@@ -476,80 +603,6 @@ namespace badgerdb
         bufMgr -> unPinPage(file, headerPageNum, true);
     }
     /**
-      * Begin a filtered scan of the index.  For instance, if the method is called
-      * using ("a",GT,"d",LTE) then we should seek all entries with a value
-      * greater than "a" and less than or equal to "d".
-      * If another scan is already executing, that needs to be ended here.
-      * Set up all the variables for scan. Start from root to find out the leaf page that contains the first RecordID
-      * that satisfies the scan parameters. Keep that page pinned in the buffer pool.
-      * @param lowVal	Low value of range, pointer to integer / double / char string
-      * @param lowOp		Low operator (GT/GTE)
-      * @param highVal	High value of range, pointer to integer / double / char string
-      * @param highOp	High operator (LT/LTE)
-      * @throws  BadOpcodesException If lowOp and highOp do not contain one of their their expected values
-      * @throws  BadScanrangeException If lowVal > highval
-      * @throws  NoSuchKeyFoundException If there is no key in the B+ tree that satisfies the scan criteria.
-    **/
-    const void BTreeIndex::startScan(const void* lowValParm,
-                                     const Operator lowOpParm,
-                                     const void* highValParm,
-                                     const Operator highOpParm)
-    {
-        // Initializing
-        lowValInt = *((int*)lowValParm);
-        highValInt = *((int*)highValParm);
-        // BadOpcodesException
-        if (!((lowOpParm == GT || lowOpParm == GTE) && (highOpParm == LT || highOpParm == LTE)))
-        {
-            throw BadOpcodesException();
-        }
-        // BadScanrangeException
-        if (lowValInt > highValInt)
-        {
-            throw BadScanrangeException();
-        }
-        // if another scan is on going, end that scan
-        if (scanExecuting)
-        {
-            endScan();
-        }
-        // initialize for this scan
-        scanExecuting = true;
-        // update the operator
-        lowOp = lowOpParm;
-        highOp = highOpParm;
-        // recursively find the exact place to start
-        // start from the root
-        Page* tmp;
-        bufMgr -> readPage(file, rootPageNum, tmp);
-        // if root is leaf, recursively through all record of root is enough
-        if (rootPageNum == 2)
-        {
-            LeafNodeInt* rootLeaf = (LeafNodeInt*)tmp;
-            bool findKey = search_key_in_leaf(rootLeaf , rootPageNum);
-            bufMgr -> unPinPage(file, rootPageNum, false);
-            if (!findKey)
-            {
-                endScan();
-                throw NoSuchKeyFoundException();
-            }
-        }
-        // if root is not leaf, recursing through all children of root
-        else
-        {
-            NonLeafNodeInt* root = (NonLeafNodeInt*) tmp;
-            bool findKey = find_leafnode(root, root -> level);
-            bufMgr -> unPinPage(file, rootPageNum, false);
-            if (!findKey)
-            {
-                endScan();
-                throw NoSuchKeyFoundException();
-            }
-        }
-        bufMgr -> readPage(file, currentPageNum, tmp);
-        currentPageData = tmp;
-    }
-    /**
      * check if a node is non_leaf node
      * @param nonLeafNode
      * @param index
@@ -651,69 +704,6 @@ namespace badgerdb
         return findKey;
     }
     /**
-	 * Fetch the record id of the next index entry that matches the scan.
-	 * Return the next record from current page being scanned. If current page has been scanned to its entirety,
-     * move on to the right sibling of current page, if any exists, to start scanning that page.
-     * Make sure to unpin any pages that are no longer required.
-     *
-     * @param outRid	RecordId of next record found that satisfies the scan criteria returned in this
-	 * @throws ScanNotInitializedException If no scan has been initialized.
-	 * @throws IndexScanCompletedException If no more records, satisfying the scan criteria, are left to be scanned.
-	**/
-    const void BTreeIndex::scanNext(RecordId& outRid)
-    {
-        // Scan is not initialized
-        if (!scanExecuting)
-        {
-            std::cout << "scan not initialized" << std::endl;
-            throw ScanNotInitializedException();
-        }
-        LeafNodeInt* currNode = (LeafNodeInt*) currentPageData;
-        // If the pageNo of next RID == 0 || hit the end of the array
-        if (currNode -> ridArray[nextEntry].page_number == 0 || nextEntry == INTARRAYLEAFSIZE)
-        {
-            bufMgr -> unPinPage(file, currentPageNum, false);
-            // If there is no right sibling page
-            if (currNode -> rightSibPageNo == 0)
-            {
-                throw IndexScanCompletedException();
-            }
-            currentPageNum = currNode -> rightSibPageNo;
-            bufMgr -> readPage(file, currentPageNum, currentPageData);
-            currNode = (LeafNodeInt*) currentPageData;
-            nextEntry = 0;
-        }
-        int key = currNode -> keyArray[nextEntry];
-        // Key is valid (in the desired range)
-        if (checkValid(key))
-        {
-            outRid = currNode -> ridArray[nextEntry];
-            nextEntry++;
-        }
-        // Key is not valid
-        else
-        {
-            bufMgr -> unPinPage(file, currentPageNum, false);
-            throw IndexScanCompletedException();
-        }
-    }
-    /**
-	 * Terminate the current scan. Unpin any pinned pages. Reset scan specific variables.
-	 * @throws ScanNotInitializedException If no scan has been initialized.
-	**/
-    const void BTreeIndex::endScan()
-    {
-        if (!scanExecuting)
-        {
-            throw ScanNotInitializedException();
-        }
-        // reset vars
-        scanExecuting = false;
-        currentPageData = nullptr;
-        currentPageNum = -1;
-        nextEntry = -1;
-    }
-    /**
      * Check if the key is valid
      * @param key
      * @return checking result
@@ -747,6 +737,7 @@ namespace badgerdb
     {
         for (int i = 0;i < INTARRAYLEAFSIZE; i++)
         {
+            // key is valid
             if (checkValid(LeafNode->keyArray[i]))
             {
                 nextEntry = i;
