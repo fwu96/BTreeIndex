@@ -27,7 +27,6 @@ File::StreamMap File::open_streams_;
 File::CountMap File::open_counts_;
 
 void File::remove(const std::string& filename) {
-  std::cout << "in file remove, filename: " << filename << std::endl;
   if (!exists(filename)) {
     throw FileNotFoundException(filename);
   }
@@ -56,7 +55,6 @@ bool File::exists(const std::string& filename) {
 }
 
 File::~File() {
-  std::cout << "I am about to close the file!!!" << std::endl;
   close();
 }
 
@@ -78,7 +76,6 @@ File::File(const std::string& name, const bool create_new) : filename_(name) {
 }
 
 void File::openIfNeeded(const bool create_new) {
-  std::cout<< "filename if needed = " << filename_ << std::endl;
   if (open_counts_.find(filename_) != open_counts_.end()) {	//exists an entry already
     ++open_counts_[filename_];
     stream_ = open_streams_[filename_];
@@ -106,19 +103,17 @@ void File::openIfNeeded(const bool create_new) {
 }
 
 void File::close() {
-  std::cout << " in file close" << std::endl;
-	if(open_counts_[filename_] > 0)
+
+    if(open_counts_[filename_] > 0)
   {
-    std::cout << "open count (>0) = " << open_counts_[filename_] << " with name " << filename_ << std::endl;
-  	--open_counts_[filename_];
+      --open_counts_[filename_];
   }
 
   stream_.reset();
 	assert(open_counts_[filename_] >= 0);
 
   if (open_counts_[filename_] == 0) {
-    std::cout << "open count == 0" << " with name " << filename_ << std::endl;
-    open_streams_.erase(filename_);
+      open_streams_.erase(filename_);
     open_counts_.erase(filename_);
   }
 }

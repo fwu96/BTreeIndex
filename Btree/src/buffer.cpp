@@ -120,7 +120,6 @@ void BufMgr::allocBuf(FrameId & frame)
 void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 {
 
-  // std::cout << "pageNo is lllllllllllllllllllllllllllllllllllllllllllll" << pageNo << std::endl;
   // check to see if it is already in the buffer pool
   // std::cout << "readPage called on file.page " << file << "." << pageNo << endl;
   FrameId frameNo = 0;
@@ -142,12 +141,11 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
     bufStats.diskreads++;
     //status = file->readPage(pageNo, &bufPool[frameNo]);
     bufPool[frameNo] = file->readPage(pageNo);
-
     // set up the entry properly
     bufDescTable[frameNo].Set(file, pageNo);
     page = &bufPool[frameNo];
 
-    // insert in the hash table
+      // insert in the hash table
     hashTable->insert(file, pageNo, frameNo);
   }
 }
@@ -156,10 +154,10 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 void BufMgr::unPinPage(File* file, const PageId pageNo, 
 			     const bool dirty) 
 {
-  // lookup in hashtable
+
+    // lookup in hashtable
   FrameId frameNo = 0;
   hashTable->lookup(file, pageNo, frameNo);
-
   if (dirty == true) bufDescTable[frameNo].dirty = dirty;
 
   // make sure the page is actually pinned
@@ -177,7 +175,6 @@ void BufMgr::flushFile(const File* file)
   	BufDesc* tmpbuf = &(bufDescTable[i]);
   	if(tmpbuf->valid == true && tmpbuf->file == file)
 		{
-      // std::cout << "pinCnt " << tmpbuf -> pinCnt << " pageNo " << tmpbuf -> pageNo << std::endl;
 	    if (tmpbuf->pinCnt > 0)
   			throw PagePinnedException(file->filename(), tmpbuf->pageNo, tmpbuf->frameNo);
 

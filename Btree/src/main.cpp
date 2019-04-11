@@ -80,6 +80,7 @@ void testEmptyTree();
 void testNoSplit();
 void testHugeNum();
 void testRange();
+void testSplit();
 void test1();
 void test2();
 void test3();
@@ -89,6 +90,7 @@ void test6();
 void test7();
 void test8();
 void test9();
+void test10();
 void errorTests();
 void deleteRelation();
 
@@ -171,6 +173,8 @@ int main(int argc, char **argv)
 	std::cout << "Finish Test Eight" << std::endl;
 	test9();
 	std::cout << "Finish Test Nine" << std::endl;
+	test10();
+	std::cout << "Finish Test Ten" << std::endl;
 	errorTests();
 	std::cout << "Finish Error Test" << std::endl;
 
@@ -262,6 +266,14 @@ void test9()
     testType(6);
     deleteRelation();
 }
+void test10()
+{
+    std::cout << "--------------------" << std::endl;
+    std::cout << "test the root split "<< std::endl;
+    forwardCreateRelationInSize(683);
+    testType(9);
+    deleteRelation();
+}
 void testType(int num)
 {
     if(testNum == 1)
@@ -282,6 +294,9 @@ void testType(int num)
                 break;
             case 8:
                 testRange();
+                break;
+            case 9:
+                testSplit();
                 break;
             default:
                 break;
@@ -366,6 +381,14 @@ void testRange()
     checkPassFail(intScan(&index,0,GT,1,LT), 0)
     checkPassFail(intScan(&index,300,GT,400,LT), 99)
     checkPassFail(intScan(&index,-1,GTE,0,LT), 1)
+}
+void testSplit()
+{
+    std::cout << "----------- testRange -----------" << std::endl;
+    BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+    checkPassFail(intScan(&index,430,GTE,432,LTE), 3)
+    checkPassFail(intScan(&index,431,GT,432,LTE), 1)
+    checkPassFail(intScan(&index,0,GT,432,LTE), 432)
 }
 // -----------------------------------------------------------------------------
 // forwardCreateRelationInRange
