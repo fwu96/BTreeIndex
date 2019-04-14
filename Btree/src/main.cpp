@@ -216,6 +216,7 @@ void test3()
 // own designed test
 void test4()
 {
+    // Create a relation with tuples valued 0 to the given number in random order
     std::cout << "--------------------" << std::endl;
     std::cout << "Test for randomly inserting with given size"<< std::endl;
     randomlyCreateRelationInSize(10000);
@@ -225,6 +226,8 @@ void test4()
 
 void test5()
 {
+    // Create a relation with tuples valued 0 to the given number
+    // In this case, it will create an empty tree
     std::cout << "--------------------" << std::endl;
     std::cout << "Test for empty tree" << std::endl;
     forwardCreateRelationInSize(0);
@@ -234,7 +237,8 @@ void test5()
 
 void test6()
 {
-    // root not split
+    // Create a relation with tuples valued 0 to the given number
+    // In this case, root will be not split
     std::cout << "--------------------" << std::endl;
     std::cout << "Test for forward inserting with no split on root" << std::endl;
     forwardCreateRelationInSize(300);
@@ -244,6 +248,8 @@ void test6()
 
 void test7()
 {
+    // Create a relation with tuples valued 0 to the given number
+    // There the given size make a very huge data
     std::cout << "--------------------" << std::endl;
     std::cout << "Test for huge data size" << std::endl;
     forwardCreateRelationInSize(1000000);
@@ -252,6 +258,8 @@ void test7()
 }
 void test8()
 {
+    // Create a relation with tuples valued in the given range
+    // In this case, there will be negative key values
     std::cout << "--------------------" << std::endl;
     std::cout << "Test for forward inserting with given range" << std::endl;
     forwardCreateRelationInRange(-500, 500);
@@ -260,6 +268,7 @@ void test8()
 }
 void test9()
 {
+    // Create a relation with tuples valued 0 to the given size in reverse order
     std::cout << "--------------------" << std::endl;
     std::cout << "Test for backward inserting with given size" << std::endl;
     backwardCreateRelationInSize(300);
@@ -268,6 +277,8 @@ void test9()
 }
 void test10()
 {
+    // Create a relation with tuples valued 0 to the given size
+    // In this case, the root just split
     std::cout << "--------------------" << std::endl;
     std::cout << "test the root split "<< std::endl;
     forwardCreateRelationInSize(683);
@@ -278,6 +289,7 @@ void testType(int num)
 {
     if(testNum == 1)
     {
+        // A switch statement for our own designed tests to call corresponding test
         switch (num)
         {
             case 4:
@@ -314,6 +326,7 @@ void testType(int num)
 
 void testRelationSize10000()
 {
+    // Test for the given size 10000
     std::cout << "----- testRelationSize10000 -----" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
@@ -327,6 +340,7 @@ void testRelationSize10000()
 }
 void testEmptyTree()
 {
+    // Test for an empty tree
     std::cout << "-------- testEmptyTree --------" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
@@ -340,7 +354,7 @@ void testEmptyTree()
 }
 void testNoSplit()
 {
-    //300
+    // Test for a small given size, for which the root will not split
     std::cout << "---------- testNoSplit ---------" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
@@ -354,7 +368,7 @@ void testNoSplit()
 }
 void testHugeNum()
 {
-    // 10000000
+    // Test for huge data
     std::cout << "---------- testHugeNum ---------- " << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
@@ -369,11 +383,10 @@ void testHugeNum()
 
 void testRange()
 {
-    // forwardCreateRelationInRange(-500,500);
+    // Test for given a range for creating relation
     std::cout << "----------- testRange -----------" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
-    //
     checkPassFail(intScan(&index,25,GT,40,LT), 14)
     checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
     checkPassFail(intScan(&index,-3,GT,3,LT), 5)
@@ -384,8 +397,10 @@ void testRange()
 }
 void testSplit()
 {
+    // Test for the root just split
     std::cout << "----------- testRange -----------" << std::endl;
     BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+
     checkPassFail(intScan(&index,430,GTE,432,LTE), 3)
     checkPassFail(intScan(&index,431,GT,432,LTE), 1)
     checkPassFail(intScan(&index,0,GT,432,LTE), 432)
@@ -600,7 +615,6 @@ void randomlyCreateRelationInSize(int size)
 
     file1->writePage(new_page_number, new_page);
 }
-
 // designed test end
 
 // -----------------------------------------------------------------------------

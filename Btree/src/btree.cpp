@@ -148,7 +148,7 @@ namespace badgerdb
     const void BTreeIndex::insertEntry(const void *key, const RecordId rid)
     {
         RIDKeyPair<int> pair;
-        pair.set(rid,*((int*)key));
+        pair.set(rid, *((int*)key));
         // If the root is leaf node
         if (rootPageNum == 2)
         {
@@ -215,11 +215,11 @@ namespace badgerdb
             LeafNodeInt* rootLeaf = (LeafNodeInt*)tmp;
             findKey = searchKeyInLeaf(rootLeaf, rootPageNum);
         }
-            // if root is not leaf, recursing through all children of root
+        // if root is not leaf, recursing through all children of root
         else
         {
             NonLeafNodeInt* root = (NonLeafNodeInt*)tmp;
-            findKey = findLeafNode(root, root->level);
+            findKey = findLeafNode(root, root -> level);
         }
         bufMgr -> unPinPage(file, rootPageNum, false);
         // does not find key
@@ -326,13 +326,13 @@ namespace badgerdb
                     // the insert key >= precious key && < next key
                     else if (nonLeaf -> keyArray[i] <= pair.key && pair.key < nonLeaf -> keyArray[i + 1])
                     {
-                        pagePairTmp = insert(pair, nonLeaf -> pageNoArray[i+1], nonLeaf -> level);
+                        pagePairTmp = insert(pair, nonLeaf -> pageNoArray[i + 1], nonLeaf -> level);
                         break;
                     }
-                    // at the last index of the keyarray && insert key > curr key
+                    // at the last index of the keyArray && insert key > curr key
                     else if (nonLeaf -> keyArray[i + 1] == 0 && nonLeaf -> keyArray[i] <= pair.key)
                     {
-                        pagePairTmp = insert(pair, nonLeaf -> pageNoArray[i+1], nonLeaf -> level);
+                        pagePairTmp = insert(pair, nonLeaf -> pageNoArray[i + 1], nonLeaf -> level);
                         break;
                     }
                 }
@@ -489,7 +489,6 @@ namespace badgerdb
             siblingNode -> rightSibPageNo = leafNode -> rightSibPageNo;
         }
         leafNode -> rightSibPageNo = newSiblingNum;
-        int cnt = 0;
         // split the current leaf into two leaves
         for (int i = 0; i < INTARRAYLEAFSIZE / 2; i++)
         {
@@ -498,7 +497,6 @@ namespace badgerdb
             siblingNode -> ridArray[i] = leafNode -> ridArray[i + INTARRAYLEAFSIZE / 2];
             leafNode -> ridArray[i + INTARRAYLEAFSIZE / 2].page_number = 0;
             leafNode -> ridArray[i + INTARRAYLEAFSIZE / 2].slot_number = 0;
-            cnt++;
         }
         // insert the pair into new splitted leaves
         // insert into the left leaf
@@ -512,11 +510,11 @@ namespace badgerdb
             insertLeaf(pair, siblingNode);
         }
         // generate the new mid key pair
-        PageKeyPair<int>* left_pair = new PageKeyPair<int>;
-        PageKeyPair<int>* right_pair = new PageKeyPair<int>;
-        left_pair -> set(currNum, siblingNode -> keyArray[0]);
-        right_pair -> set(newSiblingNum, siblingNode -> keyArray[0]);
-        return moveUpPair(left_pair, right_pair, 1, newSiblingNum, currNum);
+        PageKeyPair<int>* leftPair = new PageKeyPair<int>;
+        PageKeyPair<int>* rightPair = new PageKeyPair<int>;
+        leftPair -> set(currNum, siblingNode -> keyArray[0]);
+        rightPair -> set(newSiblingNum, siblingNode -> keyArray[0]);
+        return moveUpPair(leftPair, rightPair, 1, newSiblingNum, currNum);
     }
     /**
      * Split non-leaf node
@@ -557,11 +555,11 @@ namespace badgerdb
         {
             insertNonLeaf(pair, pair, siblingNode);
         }
-        PageKeyPair<int>* left_pair = new PageKeyPair<int>;
-        PageKeyPair<int>* right_pair = new PageKeyPair<int>;
-        left_pair -> set(currNum, midKey);
-        right_pair -> set(newSiblingNum, midKey);
-        return moveUpPair(left_pair, right_pair, 0, newSiblingNum, currNum);
+        PageKeyPair<int>* leftPair = new PageKeyPair<int>;
+        PageKeyPair<int>* rightPair = new PageKeyPair<int>;
+        leftPair -> set(currNum, midKey);
+        rightPair -> set(newSiblingNum, midKey);
+        return moveUpPair(leftPair, rightPair, 0, newSiblingNum, currNum);
     }
     /**
      * Get the key that need to be moved up
@@ -722,15 +720,15 @@ namespace badgerdb
      */
     const bool BTreeIndex::checkValid(int key)
     {
-        if(lowOp == GT && highOp == LT)
+        if (lowOp == GT && highOp == LT)
         {
             return key > lowValInt && key < highValInt;
         }
-        else if(lowOp == GTE && highOp == LT)
+        else if (lowOp == GTE && highOp == LT)
         {
             return key >= lowValInt && key < highValInt;
         }
-        else if(lowOp == GT && highOp == LTE)
+        else if (lowOp == GT && highOp == LTE)
         {
             return key > lowValInt && key <= highValInt;
         }
